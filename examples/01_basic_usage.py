@@ -25,7 +25,7 @@ GATEWAY_URL, BASE_URL = init_client(verbose=True)
 # ========== 1. 健康检查 ==========
 def check_health():
     """检查服务是否正常运行"""
-    response = requests.get(f"{BASE_URL}/health")
+    response = requests.get(f"{GATEWAY_URL}/health")
     print("=== 健康检查 ===")
     print(response.json())
     return response.ok
