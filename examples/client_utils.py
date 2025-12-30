@@ -30,7 +30,8 @@ def check_service_available(timeout: float = 3.0) -> bool:
         服务是否可用
     """
     try:
-        resp = requests.get(f"{get_api_base_url()}/health", timeout=timeout)
+        # 健康检查端点在根路径，不在 /api/v1 下
+        resp = requests.get(f"{get_gateway_url()}/health", timeout=timeout)
         return resp.ok
     except Exception:
         return False
