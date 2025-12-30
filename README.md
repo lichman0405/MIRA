@@ -60,7 +60,7 @@ A comprehensive FastAPI service for benchmarking machine learning interatomic po
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/MIRA.git
+git clone https://github.com/lichman0405/MIRA.git
 cd MIRA
 
 # Create virtual environment
@@ -68,11 +68,36 @@ python -m venv venv
 source venv/bin/activate  # Linux/macOS
 # or: venv\Scripts\activate  # Windows
 
-# Install dependencies
+# Install base dependencies
 pip install -r requirements.txt
+
+# Install ML force field models
+python scripts/install_models.py --check      # Check status
+python scripts/install_models.py --minimal    # MACE only
+python scripts/install_models.py --recommended # MACE + ORB + MatGL
+python scripts/install_models.py --all        # All models
 
 # Run the server
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### ML Force Field Installation
+
+```bash
+# Check which models are installed
+python scripts/install_models.py --check
+
+# Install specific models
+python scripts/install_models.py --mace --orb --sevennet
+
+# Or install manually
+pip install mace-torch      # MACE
+pip install orb-models      # ORB  
+pip install fairchem-core   # FAIRChem/OMAT24
+pip install tensorpotential # GRACE
+pip install mattersim       # MatterSim
+pip install sevenn          # SevenNet
+pip install matgl           # MatGL (M3GNet, CHGNet)
 ```
 
 ### Docker Deployment
@@ -214,10 +239,36 @@ MIRA/
 │   │   └── task_service.py
 │   └── core/
 │       └── ase_utils.py     # ASE utilities
+├── scripts/
+│   └── install_models.py    # ML force field installer
+├── examples/
+│   ├── setup_check.py       # Dependency checker
+│   ├── 01_basic_usage.py    # Basic API usage
+│   ├── 02_structure_optimization.py
+│   ├── 03_md_stability.py   # MD simulation
+│   ├── 04_bulk_modulus.py   # Bulk modulus
+│   ├── 05_heat_capacity.py  # Phonon/Cv
+│   ├── 06_acetylene_adsorption.py
+│   ├── 07_full_benchmark.py # Full benchmark
+│   └── structures/          # Sample MOF structures
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
+```
+
+## Examples
+
+See the [examples/](examples/) directory for comprehensive usage examples:
+
+```bash
+# Check dependencies first
+python examples/setup_check.py
+
+# Run examples
+python examples/01_basic_usage.py
+python examples/02_structure_optimization.py
+python examples/07_full_benchmark.py
 ```
 
 ## Notes
@@ -245,6 +296,6 @@ If you use MIRA in your research, please cite:
   author={Li, Shibo},
   title={MIRA: MiQroEra Interatomic-potential Reliability Arena},
   year={2025},
-  url={https://github.com/lishibo/MIRA}
+  url={https://github.com/lichman0405/MIRA}
 }
 ```
