@@ -305,3 +305,51 @@ MIRA/
 3. **GPU 内存**: 每个模型服务约需 4-8GB GPU 内存
 4. **网络**: 所有服务通过 Docker 内部网络通信，Gateway 对外暴露 8000 端口
 5. **CPU 模式**: 计算速度较慢，适合功能测试和小批量计算
+
+## 客户端使用
+
+### 远程连接
+
+客户端机器无需安装 ML 模型包，只需 `requests` 和 `ase` 库：
+
+```bash
+pip install requests ase
+```
+
+### 环境变量配置
+
+```bash
+# Linux/macOS
+export MIRA_GATEWAY_URL=http://192.168.100.207:8000
+
+# Windows PowerShell
+$env:MIRA_GATEWAY_URL = "http://192.168.100.207:8000"
+
+# 或在 Python 中设置
+import os
+os.environ["MIRA_GATEWAY_URL"] = "http://192.168.100.207:8000"
+```
+
+### 运行示例
+
+```bash
+cd MIRA/examples
+
+# 基础使用
+python 01_basic_usage.py
+
+# 结构优化
+python 02_structure_optimization.py
+
+# 多模型基准测试
+python 07_multi_model_benchmark.py
+```
+
+### 部署配置对比
+
+| 配置 | 命令 | 服务 | 适用场景 |
+|------|------|------|----------|
+| GPU 测试 | `deploy.sh test` | Gateway + MACE-ORB | 开发调试 |
+| GPU 生产 | `deploy.sh up` | 全部 5 个 Worker | 正式计算 |
+| CPU 测试 | `deploy.sh test-cpu` | Gateway + MACE-ORB (CPU) | 无 GPU 功能测试 |
+| CPU 生产 | `deploy.sh up-cpu` | Gateway + MACE-ORB + MatGL (CPU) | 无 GPU 小批量计算 |

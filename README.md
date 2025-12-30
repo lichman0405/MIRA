@@ -223,51 +223,58 @@ export MIRA_GATEWAY_URL=http://192.168.100.207:8000
 $env:MIRA_GATEWAY_URL = "http://192.168.100.207:8000"
 ```
 
+### 示例：单点能量计算
+
+```python
+import requests
+from ase.io import read
+
+# Gateway API 地址
+BASE_URL = "http://localhost:8000/api/v1"
+
+# 加载结构
+atoms = read("structure.cif")
+
+# 准备请求数据
+atoms_data = {
+    "symbols": list(atoms.get_chemical_symbols()),
+    "positions": atoms.get_positions().tolist(),
+    "cell": atoms.get_cell().tolist(),
+    "pbc": [bool(p) for p in atoms.get_pbc()]
+}
+
+# 单点能量计算
+response = requests.post(
+    f"{BASE_URL}/single_point",
+    json={
+        "atoms": atoms_data,
+        "model_name": "mace-mp",
+        "compute_stress": True,
+        "compute_forces": True
+    }
+)
+result = response.json()
+print(f"能量: {result['energy']} eV")
+```
+
 ### 示例：结构优化
 
 ```python
-import os
-import requests
-
-# 获取服务地址
-BASE_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000") + "/api/v1"
-
-# 上传结构
-with open("structure.cif", "r") as f:
-    content = f.read()
-
 response = requests.post(
-    f"{BASE_URL}/structures/upload",
-    data={
-        "name": "MOF-5",
-        "format": "cif",
-        "content": content
-    }
-)
-structure_id = response.json()["id"]
-
-# 提交优化任务
-response = requests.post(
-    f"{BASE_URL}/tasks/optimization",
+    f"{BASE_URL}/optimization",
     json={
-        "structure_id": structure_id,
-        "model_key": "mace-mp",
-        "fmax": 0.01,
+        "atoms": atoms_data,
+        "model_name": "mace-mp",
+        "fmax": 0.05,
         "max_steps": 500,
         "optimizer": "BFGS",
-        "use_filter": True,
-        "enable_d3": True
-    }
+        "use_d3": True,
+        "fix_cell": False
+    },
+    timeout=600
 )
-task_id = response.json()["task_id"]
-
-# 检查进度
-response = requests.get(f"{BASE_URL}/tasks/{task_id}")
-print(response.json())
-
-# 获取结果
-response = requests.get(f"{BASE_URL}/results/{task_id}")
 result = response.json()
+print(f"初始能量: {result['initial_energy']} eV")
 print(f"最终能量: {result['final_energy']} eV")
 ```
 
@@ -275,19 +282,18 @@ print(f"最终能量: {result['final_energy']} eV")
 
 ```python
 response = requests.post(
-    f"{BASE_URL}/tasks/stability",
+    f"{BASE_URL}/stability",
     json={
-        "structure_id": structure_id,
-        "model_key": "mace-mp",
-        "nvt_steps": 5000,
-        "nvt_temperature": 300,
-        "npt_steps": 10000,
-        "npt_temperature": 300,
-        "npt_pressure": 1.01325,
+        "atoms": atoms_data,
+        "model_name": "mace-mp",
+        "temperature": 300.0,
+        "pressure": 0.0,
         "timestep": 1.0,
-        "pre_optimize": True,
-        "enable_d3": True
-    }
+        "equilibration_steps": 1000,
+        "production_steps": 5000,
+        "use_d3": True
+    },
+    timeout=1800
 )
 ```
 
@@ -336,10 +342,16 @@ MIRA/
 │   ├── install_models.py    # ML 力场安装脚本
 │   └── deploy.sh            # 部署脚本
 ├── examples/
-│   ├── 01-07_*.py           # 功能示例
-│   ├── 08_microservices_client.py  # 异步客户端
-│   ├── config.py            # 服务器配置
-│   └── structures/          # 示例 MOF 结构
+│   ├── 01_basic_usage.py         # 基础使用示例
+│   ├── 02_structure_optimization.py  # 结构优化
+│   ├── 03_md_stability.py        # MD 稳定性测试
+│   ├── 04_bulk_modulus.py        # 体积模量计算
+│   ├── 05_heat_capacity.py       # 热容计算
+│   ├── 06_single_point.py        # 单点能量计算
+│   ├── 07_multi_model_benchmark.py  # 多模型基准测试
+│   ├── 08_microservices_client.py   # 异步客户端
+│   ├── client_utils.py           # 客户端工具
+│   └── structures/               # 示例 MOF 结构
 ├── docs/                     # 文档目录
 │   ├── API.md               # API 接口文档
 │   ├── DEPLOYMENT.md        # 部署指南
@@ -358,18 +370,24 @@ MIRA/
 查看 [examples/](examples/) 目录获取完整使用示例：
 
 ```bash
-# 首先检查依赖
-python examples/setup_check.py
+# 运行示例（需要先启动 Docker 服务）
+./scripts/deploy.sh test-cpu  # 或 test (GPU)
 
-# 运行示例
+# 运行基础示例
 python examples/01_basic_usage.py
+
+# 运行结构优化
 python examples/02_structure_optimization.py
-python examples/07_full_benchmark.py
+
+# 运行多模型基准测试
+python examples/07_multi_model_benchmark.py
 
 # 连接远程服务器运行
 export MIRA_GATEWAY_URL=http://192.168.100.207:8000
 python examples/01_basic_usage.py
 ```
+
+> **注意**: 使用 Docker 微服务时，无需本地安装 ML 模型包。示例脚本会自动检测服务状态并通过 API 调用计算。
 
 ## 📝 注意事项
 
