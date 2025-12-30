@@ -10,7 +10,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from ase import Atoms
 from ase.optimize import BFGS, FIRE, LBFGS
-from ase.constraints import ExpCellFilter, StrainFilter
+# ASE 版本兼容性：ExpCellFilter 和 StrainFilter 在新版本中移到了 ase.filters
+try:
+    from ase.filters import ExpCellFilter, StrainFilter
+except ImportError:
+    from ase.constraints import ExpCellFilter, StrainFilter
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
 from ase.md.langevin import Langevin
 from ase import units

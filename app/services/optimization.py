@@ -8,7 +8,12 @@ import numpy as np
 
 from ase import Atoms
 from ase.optimize import BFGS, FIRE, LBFGS
-from ase.filters import FrechetCellFilter, ExpCellFilter
+# ASE 版本兼容性：ExpCellFilter 在 ASE >= 3.23 中移到了 ase.filters
+try:
+    from ase.filters import FrechetCellFilter, ExpCellFilter
+except ImportError:
+    from ase.constraints import ExpCellFilter
+    from ase.filters import FrechetCellFilter
 from ase.io import write
 from ase.io.trajectory import Trajectory
 

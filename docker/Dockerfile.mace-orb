@@ -34,10 +34,11 @@ RUN python -m pip install --upgrade pip setuptools wheel
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 
 # 安装公共依赖
+# ASE >= 3.27.0 必需：支持 MTKNPT 等新功能，ExpCellFilter/StrainFilter 在 ase.filters 模块
 RUN pip install \
     numpy>=1.24.0 \
     scipy>=1.10.0 \
-    ase>=3.27.0 \
+    "ase>=3.27.0" \
     phonopy>=2.20.0 \
     torch-dftd>=0.4.0 \
     fastapi>=0.104.0 \
