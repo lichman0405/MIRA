@@ -57,6 +57,7 @@ class SinglePointResponse(BaseModel):
     forces: Optional[List[List[float]]] = Field(None, description="原子力 (eV/Å)")
     stress: Optional[List[float]] = Field(None, description="应力张量 (eV/Å³)")
     energy_per_atom: float = Field(..., description="每原子能量 (eV/atom)")
+    max_force: Optional[float] = Field(None, description="最大原子力 (eV/Å)")
 
 
 # ============================================

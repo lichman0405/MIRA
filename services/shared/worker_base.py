@@ -153,24 +153,46 @@ class BaseWorkerApp(ABC):
                 
                 calc = self.get_calculator(request.model_name)
                 atoms = atoms_from_data(request.atoms)
+                
+                # 检查结构大小
+                if len(atoms) > 1000:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Structure too large ({len(atoms)} atoms). Maximum 1000 atoms."
+                    )
+                
                 atoms.calc = calc
                 
                 energy = atoms.get_potential_energy()
                 forces = atoms.get_forces().tolist() if request.compute_forces else None
                 stress = atoms.get_stress().tolist() if request.compute_stress else None
                 
+                # 计算最大力
+                max_force = None
+                if forces is not None:
+                    import numpy as np
+                    max_force = float(np.max(np.abs(forces)))
+                
                 return SinglePointResponse(
                     energy=float(energy),
                     forces=forces,
                     stress=stress,
-                    energy_per_atom=float(energy / len(atoms))
+                    energy_per_atom=float(energy / len(atoms)),
+                    max_force=max_force
                 )
+            except HTTPException:
+                raise
             except Exception as e:
+                traceback.print_exc()
                 raise HTTPException(status_code=500, detail=str(e))
+            finally:
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         
         @app.post("/optimization", response_model=OptimizationResponse)
         async def optimization(request: OptimizationRequest):
             """结构优化"""
+            calc = None
             try:
                 if request.model_name not in self.get_available_models():
                     raise HTTPException(
@@ -196,7 +218,21 @@ class BaseWorkerApp(ABC):
                 atoms = atoms_from_data(request.atoms)
                 atoms.calc = calc
                 
+                # 检查结构大小，限制原子数
+                if len(atoms) > 1000:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Structure too large ({len(atoms)} atoms). Maximum 1000 atoms."
+                    )
+                
                 initial_energy = atoms.get_potential_energy()
+                
+                # 检查初始能量是否异常
+                if abs(initial_energy) > 1e8:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Initial energy abnormally high ({initial_energy:.2e} eV). Structure may have overlapping atoms."
+                    )
                 
                 # 设置优化器
                 if request.fix_cell:
@@ -214,7 +250,7 @@ class BaseWorkerApp(ABC):
                 final_energy = atoms.get_potential_energy()
                 final_forces = atoms.get_forces()
                 
-                return OptimizationResponse(
+                result = OptimizationResponse(
                     converged=converged,
                     steps=opt.nsteps,
                     initial_energy=float(initial_energy),
@@ -223,9 +259,17 @@ class BaseWorkerApp(ABC):
                     final_forces_max=float(abs(final_forces).max()),
                     optimized_atoms=atoms_to_data(atoms)
                 )
+                
+                return result
+            except HTTPException:
+                raise
             except Exception as e:
                 traceback.print_exc()
                 raise HTTPException(status_code=500, detail=str(e))
+            finally:
+                # 清理资源
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         
         @app.post("/stability", response_model=StabilityResponse)
         async def stability(request: StabilityRequest):
@@ -239,6 +283,14 @@ class BaseWorkerApp(ABC):
                 
                 calc = self.get_calculator(request.model_name)
                 atoms = atoms_from_data(request.atoms)
+                
+                # 检查结构大小
+                if len(atoms) > 500:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Structure too large for MD ({len(atoms)} atoms). Maximum 500 atoms."
+                    )
+                
                 atoms.calc = calc
                 
                 # 初始化速度
@@ -303,9 +355,14 @@ class BaseWorkerApp(ABC):
                     max_displacement=max_disp,
                     trajectory_length=len(energies)
                 )
+            except HTTPException:
+                raise
             except Exception as e:
                 traceback.print_exc()
                 raise HTTPException(status_code=500, detail=str(e))
+            finally:
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         
         @app.post("/bulk_modulus", response_model=BulkModulusResponse)
         async def bulk_modulus(request: BulkModulusRequest):
