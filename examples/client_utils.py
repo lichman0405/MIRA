@@ -42,12 +42,15 @@ def get_service_models() -> List[str]:
     从服务获取可用模型列表
     
     Returns:
-        可用模型的 key 列表
+        可用模型的 name 列表
     """
     try:
         resp = requests.get(f"{get_api_base_url()}/models/", timeout=10)
         if resp.ok:
-            return [m["key"] for m in resp.json()]
+            data = resp.json()
+            # Gateway API 返回格式: {"total": N, "models": [...]}
+            models = data.get("models", []) if isinstance(data, dict) else data
+            return [m["name"] for m in models]
     except Exception:
         pass
     return []

@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-MIRA 微服务客户端示例
+MIRA 异步客户端示例
 
-演示如何调用 MIRA Gateway 进行计算
+演示如何使用异步 HTTP 客户端调用 MIRA Gateway
 
 运行前确保:
 1. 服务已启动: 
-   - 本地: uvicorn app.main:app --host 0.0.0.0 --port 8000
-   - Docker: ./scripts/deploy.sh test
+   - Docker (推荐): ./scripts/deploy.sh test-cpu
+   - GPU Docker: ./scripts/deploy.sh test
 
 支持环境变量:
     MIRA_GATEWAY_URL=http://192.168.100.207:8000  # 测试服务器
+
+注意: 使用 Docker 微服务时，无需本地安装 ML 模型包
 """
 import os
 import httpx

@@ -12,280 +12,130 @@ MIRA Examples - 体积模量计算
 
 注意: 使用 Docker 微服务时，无需本地安装 ML 模型包
 """
-import os
 import requests
-import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Any
+from ase.io import read
 
 # 客户端初始化
-from client_utils import init_client
+from client_utils import init_client, get_service_models
+
 
 GATEWAY_URL, BASE_URL = init_client(verbose=True)
 
 
-def upload_structure(file_path: str) -> Optional[str]:
-    """上传结构文件"""
-    path = Path(file_path)
-    content = path.read_text()
-    
-    response = requests.post(
-        f"{BASE_URL}/structures/upload",
-        data={
-            "name": path.stem,
-            "format": "cif",
-            "content": content
-        }
-    )
-    
-    if response.ok:
-        return response.json()['id']
-    return None
+def atoms_to_dict(atoms) -> Dict[str, Any]:
+    """将 ASE Atoms 对象转换为 API 请求格式"""
+    return {
+        "symbols": list(atoms.get_chemical_symbols()),
+        "positions": atoms.get_positions().tolist(),
+        "cell": atoms.get_cell().tolist() if atoms.cell is not None else None,
+        "pbc": list(atoms.get_pbc())
+    }
 
 
-def submit_bulk_modulus(
-    structure_id: str,
-    model_key: str,
-    volume_range: float = 0.1,
-    num_points: int = 11,
-    pre_optimize: bool = True,
-    enable_d3: bool = True
-) -> Optional[str]:
+def run_bulk_modulus(
+    atoms,
+    model_name: str,
+    strain_range: float = 0.06,
+    num_points: int = 7,
+    use_d3: bool = True
+) -> Dict[str, Any]:
     """
-    提交体积模量计算任务
+    计算体积模量
     
     Args:
-        structure_id: 结构 ID
-        model_key: 模型键
-        volume_range: 体积变化范围 (±比例)
-        num_points: E-V 曲线采样点数
-        pre_optimize: 是否预优化
-        enable_d3: 启用 D3 校正
+        atoms: ASE Atoms 对象
+        model_name: 模型名称
+        strain_range: 应变范围 (±)
+        num_points: 采样点数
+        use_d3: 是否启用 D3 校正
         
     Returns:
-        task_id
+        体积模量计算结果
     """
+    if hasattr(atoms, 'get_chemical_symbols'):
+        atoms_data = atoms_to_dict(atoms)
+    else:
+        atoms_data = atoms
+    
+    request_data = {
+        "atoms": atoms_data,
+        "model_name": model_name,
+        "strain_range": strain_range,
+        "num_points": num_points,
+        "use_d3": use_d3
+    }
+    
+    print(f"\n=== 体积模量计算 ===")
+    print(f"  模型: {model_name}")
+    print(f"  应变范围: ±{strain_range*100:.1f}%")
+    print(f"  采样点数: {num_points}")
+    print("\n正在计算 E-V 曲线...")
+    
     response = requests.post(
-        f"{BASE_URL}/tasks/bulk-modulus",
-        json={
-            "structure_id": structure_id,
-            "model_key": model_key,
-            "volume_range": volume_range,
-            "num_points": num_points,
-            "pre_optimize": pre_optimize,
-            "enable_d3": enable_d3
-        }
+        f"{BASE_URL}/bulk_modulus",
+        json=request_data,
+        timeout=600
     )
     
     if response.ok:
-        return response.json()['task_id']
+        result = response.json()
+        print(f"\n=== 计算完成 ===")
+        print(f"  体积模量 B0: {result.get('bulk_modulus', 'N/A'):.2f} GPa")
+        print(f"  平衡体积 V0: {result.get('equilibrium_volume', 'N/A'):.2f} Å³")
+        print(f"  B0 导数 B': {result.get('bulk_modulus_derivative', 'N/A'):.2f}")
+        print(f"  拟合 R²: {result.get('r_squared', 'N/A'):.4f}")
+        return result
     else:
-        print(f"提交失败: {response.text}")
-        return None
-
-
-def wait_for_task(task_id: str, timeout: int = 600) -> dict:
-    """等待任务完成"""
-    start_time = time.time()
-    
-    while time.time() - start_time < timeout:
-        response = requests.get(f"{BASE_URL}/tasks/{task_id}")
-        if not response.ok:
-            return {"status": "error"}
-        
-        task = response.json()
-        status = task['status']
-        
-        if status == "completed":
-            result_response = requests.get(f"{BASE_URL}/results/{task_id}")
-            return result_response.json()
-        
-        elif status in ["failed", "cancelled"]:
-            return {"status": status, "error": task.get('error_message')}
-        
-        progress = task.get('progress', 0)
-        print(f"\r  E-V 曲线计算: {progress:.1f}%", end="", flush=True)
-        
-        time.sleep(2)
-    
-    return {"status": "timeout"}
-
-
-def calculate_bulk_modulus(
-    structure_path: str,
-    model_key: str = "mace-mp",
-    volume_range: float = 0.08,
-    num_points: int = 11
-):
-    """
-    计算 MOF 的体积模量
-    
-    Args:
-        structure_path: 结构文件路径
-        model_key: 模型
-        volume_range: 体积变化范围
-        num_points: 采样点数
-    """
-    print(f"\n{'='*60}")
-    print(f"体积模量计算")
-    print(f"{'='*60}")
-    print(f"结构: {Path(structure_path).stem}")
-    print(f"模型: {model_key}")
-    print(f"体积范围: ±{volume_range*100}%")
-    print(f"采样点数: {num_points}")
-    
-    # 上传结构
-    print("\n上传结构...")
-    structure_id = upload_structure(structure_path)
-    if not structure_id:
-        print("上传失败")
-        return None
-    
-    # 提交任务
-    print("提交计算任务...")
-    task_id = submit_bulk_modulus(
-        structure_id=structure_id,
-        model_key=model_key,
-        volume_range=volume_range,
-        num_points=num_points
-    )
-    
-    if not task_id:
-        return None
-    
-    print(f"任务 ID: {task_id}")
-    
-    # 等待结果
-    result = wait_for_task(task_id)
-    print()
-    
-    if result.get('status') in ['failed', 'timeout', 'error']:
-        print(f"计算失败: {result.get('error', result.get('status'))}")
-        return None
-    
-    # 显示结果
-    print(f"\n{'='*60}")
-    print("体积模量计算结果")
-    print(f"{'='*60}")
-    
-    B0 = result.get('bulk_modulus', 0)
-    B0_prime = result.get('bulk_modulus_derivative', 0)
-    V0 = result.get('equilibrium_volume', 0)
-    E0 = result.get('equilibrium_energy', 0)
-    r2 = result.get('r_squared', 0)
-    
-    print(f"\n体积模量 (B₀): {B0:.2f} GPa")
-    print(f"B₀ 导数 (B₀'): {B0_prime:.2f}")
-    print(f"平衡体积 (V₀): {V0:.2f} Å³")
-    print(f"平衡能量 (E₀): {E0:.4f} eV")
-    print(f"拟合质量 (R²): {r2:.6f}")
-    
-    # E-V 曲线数据
-    ev_data = result.get('ev_curve_data', [])
-    if ev_data:
-        print(f"\nE-V 曲线数据 ({len(ev_data)} 点):")
-        print(f"{'体积(Å³)':<15} {'能量(eV)':<15}")
-        print("-" * 30)
-        for point in ev_data:
-            print(f"{point['volume']:<15.2f} {point['energy']:<15.4f}")
-    
-    # 力学稳定性评估
-    print(f"\n力学稳定性评估:")
-    if B0 > 10:
-        print(f"  ✓ 体积模量较高 ({B0:.1f} GPa)，力学稳定性好")
-    elif B0 > 2:
-        print(f"  △ 体积模量中等 ({B0:.1f} GPa)，力学稳定性一般")
-    else:
-        print(f"  ✗ 体积模量较低 ({B0:.1f} GPa)，力学稳定性可能较差")
-    
-    return result
-
-
-def compare_models_bulk_modulus(
-    structure_path: str,
-    models: list = None
-):
-    """
-    使用不同模型计算体积模量并比较
-    
-    Args:
-        structure_path: 结构文件路径
-        models: 模型列表
-    """
-    if models is None:
-        models = ["mace-mp", "orb-v2", "grace-2l", "sevennet-0"]
-    
-    print(f"\n{'='*60}")
-    print(f"多模型体积模量比较")
-    print(f"结构: {Path(structure_path).stem}")
-    print(f"{'='*60}")
-    
-    results = []
-    
-    for model in models:
-        print(f"\n--- 模型: {model} ---")
-        
-        # 上传结构（每个模型单独上传避免冲突）
-        structure_id = upload_structure(structure_path)
-        if not structure_id:
-            continue
-        
-        # 提交任务
-        task_id = submit_bulk_modulus(
-            structure_id=structure_id,
-            model_key=model
-        )
-        
-        if not task_id:
-            results.append({"model": model, "status": "failed"})
-            continue
-        
-        # 等待结果
-        result = wait_for_task(task_id)
-        print()
-        
-        if result.get('status') in ['failed', 'timeout', 'error']:
-            results.append({"model": model, "status": result.get('status')})
-        else:
-            results.append({
-                "model": model,
-                "status": "completed",
-                "bulk_modulus": result.get('bulk_modulus', 0),
-                "r_squared": result.get('r_squared', 0)
-            })
-            print(f"  B₀ = {result.get('bulk_modulus', 0):.2f} GPa (R² = {result.get('r_squared', 0):.4f})")
-    
-    # 汇总比较
-    print(f"\n{'='*60}")
-    print("体积模量比较汇总")
-    print(f"{'='*60}")
-    print(f"{'模型':<20} {'B₀ (GPa)':<15} {'R²':<10}")
-    print("-" * 45)
-    
-    for r in results:
-        if r['status'] == 'completed':
-            print(f"{r['model']:<20} {r['bulk_modulus']:<15.2f} {r['r_squared']:<10.6f}")
-        else:
-            print(f"{r['model']:<20} {'失败'}")
-    
-    return results
+        print(f"\n计算失败: {response.text}")
+        return {"error": response.text}
 
 
 # ========== 主程序 ==========
 if __name__ == "__main__":
-    structures_dir = Path(__file__).parent / "structures"
+    print("=" * 60)
+    print("MIRA 体积模量计算示例")
+    print("=" * 60)
     
-    # 示例 1: 单模型计算 UiO-66 的体积模量
-    # UiO-66 是一个力学稳定性很好的 MOF
-    calculate_bulk_modulus(
-        str(structures_dir / "UiO-66.cif"),
-        model_key="mace-mp",
-        volume_range=0.08,
-        num_points=11
+    # 获取可用模型
+    available_models = get_service_models()
+    if not available_models:
+        print("[错误] 没有可用的模型")
+        exit(1)
+    
+    print(f"\n可用模型: {', '.join(available_models)}")
+    model_to_use = available_models[0]
+    print(f"将使用模型: {model_to_use}")
+    
+    # 加载示例结构
+    structures_dir = Path(__file__).parent / "structures"
+    cif_files = list(structures_dir.glob("*.cif"))
+    
+    if not cif_files:
+        print(f"\n[警告] 在 {structures_dir} 中没有找到 CIF 文件")
+        exit(1)
+    
+    structure_file = cif_files[0]
+    print(f"\n加载结构: {structure_file.name}")
+    
+    try:
+        atoms = read(str(structure_file))
+        print(f"  化学式: {atoms.get_chemical_formula()}")
+        print(f"  原子数: {len(atoms)}")
+    except Exception as e:
+        print(f"加载结构失败: {e}")
+        exit(1)
+    
+    # 计算体积模量
+    result = run_bulk_modulus(
+        atoms,
+        model_name=model_to_use,
+        strain_range=0.04,  # ±4%
+        num_points=5,
+        use_d3=True
     )
     
-    # 示例 2: 多模型比较
-    # compare_models_bulk_modulus(
-    #     str(structures_dir / "UiO-66.cif"),
-    #     models=["mace-mp", "orb-v2", "grace-2l"]
-    # )
+    print("\n" + "=" * 60)
+    print("体积模量计算完成！")
+    print("=" * 60)

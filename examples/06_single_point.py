@@ -1,6 +1,6 @@
 """
-MIRA Examples - MD 稳定性测试
-对 MOF 结构进行分子动力学模拟，评估热稳定性
+MIRA Examples - 单点能量计算
+计算结构的单点能量、力和应力
 
 运行前确保:
 1. 服务已启动: 
@@ -14,7 +14,7 @@ MIRA Examples - MD 稳定性测试
 """
 import requests
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 from ase.io import read
 
 # 客户端初始化
@@ -34,31 +34,23 @@ def atoms_to_dict(atoms) -> Dict[str, Any]:
     }
 
 
-def run_stability_test(
+def run_single_point(
     atoms,
     model_name: str,
-    temperature: float = 300.0,
-    pressure: float = 0.0,
-    timestep: float = 1.0,
-    equilibration_steps: int = 500,
-    production_steps: int = 1000,
-    use_d3: bool = True
+    compute_stress: bool = True,
+    compute_forces: bool = True
 ) -> Dict[str, Any]:
     """
-    运行 MD 稳定性测试
+    计算单点能量
     
     Args:
         atoms: ASE Atoms 对象
         model_name: 模型名称
-        temperature: 温度 (K)
-        pressure: 压力 (GPa), 0 表示 NVT
-        timestep: 时间步长 (fs)
-        equilibration_steps: 平衡步数
-        production_steps: 生产步数
-        use_d3: 是否启用 D3 校正
+        compute_stress: 是否计算应力
+        compute_forces: 是否计算力
         
     Returns:
-        稳定性测试结果
+        计算结果
     """
     if hasattr(atoms, 'get_chemical_symbols'):
         atoms_data = atoms_to_dict(atoms)
@@ -68,47 +60,80 @@ def run_stability_test(
     request_data = {
         "atoms": atoms_data,
         "model_name": model_name,
-        "temperature": temperature,
-        "pressure": pressure,
-        "timestep": timestep,
-        "equilibration_steps": equilibration_steps,
-        "production_steps": production_steps,
-        "use_d3": use_d3
+        "compute_stress": compute_stress,
+        "compute_forces": compute_forces
     }
     
-    print(f"\n=== MD 稳定性测试 ===")
+    print(f"\n=== 单点能量计算 ===")
     print(f"  模型: {model_name}")
-    print(f"  温度: {temperature} K")
-    print(f"  压力: {pressure} GPa")
-    print(f"  时间步长: {timestep} fs")
-    print(f"  平衡步数: {equilibration_steps}")
-    print(f"  生产步数: {production_steps}")
-    print("\n正在运行 MD 模拟...")
+    print("\n正在计算...")
     
     response = requests.post(
-        f"{BASE_URL}/stability",
+        f"{BASE_URL}/single_point",
         json=request_data,
-        timeout=1800  # 30 分钟超时
+        timeout=300
     )
     
     if response.ok:
         result = response.json()
-        print(f"\n=== 测试完成 ===")
-        print(f"  最终温度: {result.get('final_temperature', 'N/A'):.1f} K")
-        print(f"  能量漂移: {result.get('energy_drift', 'N/A'):.6f} eV/atom")
-        print(f"  结构稳定: {'是' if result.get('is_stable', False) else '否'}")
-        if 'rmsd' in result:
-            print(f"  RMSD: {result['rmsd']:.4f} Å")
+        print(f"\n=== 计算完成 ===")
+        print(f"  总能量: {result.get('energy', 'N/A'):.6f} eV")
+        print(f"  每原子能量: {result.get('energy_per_atom', 'N/A'):.6f} eV/atom")
+        
+        if 'max_force' in result:
+            print(f"  最大力: {result['max_force']:.6f} eV/Å")
+        
+        if 'stress' in result:
+            stress = result['stress']
+            print(f"  应力张量 (GPa): {stress}")
+        
         return result
     else:
-        print(f"\n测试失败: {response.text}")
+        print(f"\n计算失败: {response.text}")
         return {"error": response.text}
+
+
+def compare_models_single_point(
+    atoms,
+    model_names: List[str]
+) -> List[Dict[str, Any]]:
+    """
+    使用多个模型计算单点能量进行比较
+    """
+    results = []
+    
+    print(f"\n{'='*60}")
+    print(f"多模型单点能量比较")
+    print(f"结构: {atoms.get_chemical_formula()}")
+    print(f"原子数: {len(atoms)}")
+    print(f"{'='*60}")
+    
+    for model in model_names:
+        print(f"\n>>> 模型: {model}")
+        result = run_single_point(atoms, model)
+        result["model"] = model
+        results.append(result)
+    
+    # 总结
+    print(f"\n{'='*60}")
+    print("计算结果汇总")
+    print(f"{'='*60}")
+    print(f"{'模型':<20} {'总能量 (eV)':>15} {'每原子 (eV)':>12} {'最大力 (eV/Å)':>15}")
+    print("-" * 65)
+    
+    for r in results:
+        if "error" not in r:
+            print(f"{r['model']:<20} {r.get('energy', 0):>15.4f} {r.get('energy_per_atom', 0):>12.4f} {r.get('max_force', 0):>15.4f}")
+        else:
+            print(f"{r['model']:<20} {'错误':>15}")
+    
+    return results
 
 
 # ========== 主程序 ==========
 if __name__ == "__main__":
     print("=" * 60)
-    print("MIRA MD 稳定性测试示例")
+    print("MIRA 单点能量计算示例")
     print("=" * 60)
     
     # 获取可用模型
@@ -118,8 +143,6 @@ if __name__ == "__main__":
         exit(1)
     
     print(f"\n可用模型: {', '.join(available_models)}")
-    model_to_use = available_models[0]
-    print(f"将使用模型: {model_to_use}")
     
     # 加载示例结构
     structures_dir = Path(__file__).parent / "structures"
@@ -140,16 +163,9 @@ if __name__ == "__main__":
         print(f"加载结构失败: {e}")
         exit(1)
     
-    # 运行稳定性测试（使用较少步数进行快速测试）
-    result = run_stability_test(
-        atoms,
-        model_name=model_to_use,
-        temperature=300.0,
-        equilibration_steps=100,  # 快速测试
-        production_steps=200,
-        use_d3=True
-    )
+    # 多模型比较
+    compare_models_single_point(atoms, available_models)
     
     print("\n" + "=" * 60)
-    print("MD 稳定性测试完成！")
+    print("单点能量计算完成！")
     print("=" * 60)
