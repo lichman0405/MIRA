@@ -21,7 +21,8 @@ def get_model_registry() -> ModelRegistry:
     global _model_registry
     if _model_registry is None:
         settings = get_settings()
-        _model_registry = ModelRegistry(default_device=settings.DEFAULT_DEVICE)
+        _model_registry = ModelRegistry()
+        _model_registry.set_defaults(device=settings.DEFAULT_DEVICE)
     return _model_registry
 
 
