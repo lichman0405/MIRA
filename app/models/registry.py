@@ -188,6 +188,14 @@ class ModelRegistry:
             return self._loaded_models[model_key]
         return self.load_model(model_key, device, dtype)
     
+    def is_loaded(self, model_key: str) -> bool:
+        """检查指定模型是否已加载"""
+        return model_key in self._loaded_models
+    
+    def list_loaded_models(self) -> List[str]:
+        """列出所有已加载的模型"""
+        return list(self._loaded_models.keys())
+    
     @property
     def loaded_models(self) -> List[str]:
         """已加载的模型列表"""
