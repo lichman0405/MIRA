@@ -33,7 +33,7 @@ def atoms_to_dict(atoms) -> Dict[str, Any]:
         "symbols": list(atoms.get_chemical_symbols()),
         "positions": atoms.get_positions().tolist(),
         "cell": atoms.get_cell().tolist() if atoms.cell is not None else None,
-        "pbc": list(atoms.get_pbc())
+        "pbc": [bool(p) for p in atoms.get_pbc()]  # 转换 numpy bool 为 Python bool
     }
 
 
