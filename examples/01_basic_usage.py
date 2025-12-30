@@ -4,8 +4,14 @@ MIRA Examples - 基础使用示例
 
 运行前确保:
 1. 已安装依赖: python examples/setup_check.py
-2. 服务已启动: uvicorn app.main:app --host 0.0.0.0 --port 8000
+2. 服务已启动: 
+   - 本地: uvicorn app.main:app --host 0.0.0.0 --port 8000
+   - Docker: ./scripts/deploy.sh test
+
+支持环境变量:
+    MIRA_GATEWAY_URL=http://192.168.100.207:8000  # 测试服务器
 """
+import os
 import requests
 from pathlib import Path
 
@@ -17,7 +23,11 @@ except ImportError:
     print("提示: 运行 'python examples/setup_check.py' 检查依赖")
 
 # ========== 配置 ==========
-BASE_URL = "http://localhost:8000/api/v1"
+# 支持通过环境变量设置服务器地址
+GATEWAY_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000")
+BASE_URL = f"{GATEWAY_URL}/api/v1"
+
+print(f"[配置] 服务地址: {GATEWAY_URL}")
 
 # ========== 1. 健康检查 ==========
 def check_health():

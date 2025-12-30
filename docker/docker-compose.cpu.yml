@@ -1,0 +1,114 @@
+# ============================================
+# MIRA CPU-Only 测试环境 - Docker Compose
+# ============================================
+#
+# 适用于: 无 GPU 的测试环境
+# 使用 CPU 版本的 PyTorch 运行
+#
+# 使用:
+#   docker-compose -f docker-compose.cpu.yml up -d
+#
+# 注意:
+#   - CPU 模式下计算速度较慢
+#   - 适合功能测试，不适合大规模计算
+#
+# ============================================
+
+services:
+  # ==========================================
+  # Gateway - 统一入口
+  # ==========================================
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gateway
+    image: mira-gateway:latest
+    container_name: mira-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MACE_ORB_URL=http://mira-mace-orb:8001
+      - FAIRCHEM_SEVENNET_URL=http://mira-fairchem-sevennet:8002
+      - MATGL_URL=http://mira-matgl:8003
+      - GRACE_URL=http://mira-grace:8004
+      - MATTERSIM_URL=http://mira-mattersim:8005
+    networks:
+      - mira-network
+    depends_on:
+      - mace-orb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==========================================
+  # MACE + ORB Worker (CPU Mode)
+  # ==========================================
+  mace-orb:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mace-orb-cpu
+    image: mira-mace-orb-cpu:latest
+    container_name: mira-mace-orb
+    restart: unless-stopped
+    # 无 GPU 资源预留
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 180s  # CPU 模式启动较慢
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==========================================
+  # MatGL Worker (CPU Mode) - 可选
+  # ==========================================
+  matgl:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.matgl-cpu
+    image: mira-matgl-cpu:latest
+    container_name: mira-matgl
+    restart: unless-stopped
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 180s
+    profiles:
+      - full  # 只在 --profile full 时启动
+
+# ============================================
+# 网络
+# ============================================
+networks:
+  mira-network:
+    driver: bridge
+
+# ============================================
+# 持久化存储
+# ============================================
+volumes:
+  mira-models:
+    driver: local

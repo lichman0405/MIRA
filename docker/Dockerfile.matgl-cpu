@@ -1,0 +1,66 @@
+# MatGL Worker Service (CPU Version)
+# 端口: 8003
+# 适用于无 GPU 的测试环境
+
+FROM python:3.10-slim
+
+# 环境变量
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# 安装系统依赖
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    libopenblas-dev \
+    liblapack-dev \
+    libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 升级 pip
+RUN pip install --upgrade pip setuptools wheel
+
+# 安装 PyTorch CPU 版本
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# 安装公共依赖
+RUN pip install \
+    numpy>=1.24.0 \
+    scipy>=1.10.0 \
+    ase>=3.27.0 \
+    phonopy>=2.20.0 \
+    torch-dftd>=0.4.0 \
+    fastapi>=0.104.0 \
+    uvicorn[standard]>=0.24.0 \
+    pydantic>=2.5.0 \
+    httpx>=0.25.0
+
+# 安装 DGL CPU 版本
+RUN pip install dgl -f https://data.dgl.ai/wheels/repo.html || pip install dgl
+
+# 安装 MatGL
+RUN pip install matgl
+
+# 创建工作目录
+WORKDIR /app
+
+# 复制共享模块
+COPY services/shared /app/shared
+
+# 复制服务代码
+COPY services/matgl /app/matgl_service
+
+# 暴露端口
+EXPOSE 8003
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=30s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:8003/health || exit 1
+
+# 启动命令
+CMD ["python", "-m", "uvicorn", "matgl_service.main:app", "--host", "0.0.0.0", "--port", "8003"]

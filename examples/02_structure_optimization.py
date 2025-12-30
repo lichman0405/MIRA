@@ -4,8 +4,14 @@ MIRA Examples - 结构优化示例
 
 运行前确保:
 1. 已安装 ML 力场: python scripts/install_models.py --check
-2. 服务已启动: uvicorn app.main:app --host 0.0.0.0 --port 8000
+2. 服务已启动: 
+   - 本地: uvicorn app.main:app --host 0.0.0.0 --port 8000
+   - Docker: ./scripts/deploy.sh test
+
+支持环境变量:
+    MIRA_GATEWAY_URL=http://192.168.100.207:8000  # 测试服务器
 """
+import os
 import requests
 import time
 from pathlib import Path
@@ -21,7 +27,8 @@ except ImportError:
     AVAILABLE_MODELS = []
 
 # ========== 配置 ==========
-BASE_URL = "http://localhost:8000/api/v1"
+GATEWAY_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000")
+BASE_URL = f"{GATEWAY_URL}/api/v1"
 
 # 所有可用模型（按家族分组）
 ALL_MODELS = {
