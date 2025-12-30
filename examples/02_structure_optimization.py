@@ -3,13 +3,14 @@ MIRA Examples - 结构优化示例
 使用不同 ML 力场模型对 MOF 结构进行优化
 
 运行前确保:
-1. 已安装 ML 力场: python scripts/install_models.py --check
-2. 服务已启动: 
-   - 本地: uvicorn app.main:app --host 0.0.0.0 --port 8000
-   - Docker: ./scripts/deploy.sh test
+1. 服务已启动: 
+   - Docker (推荐): ./scripts/deploy.sh test-cpu
+   - GPU Docker: ./scripts/deploy.sh test
 
 支持环境变量:
     MIRA_GATEWAY_URL=http://192.168.100.207:8000  # 测试服务器
+
+注意: 使用 Docker 微服务时，无需本地安装 ML 模型包
 """
 import os
 import requests
@@ -17,18 +18,10 @@ import time
 from pathlib import Path
 from typing import Optional
 
-# 依赖检查
-try:
-    from setup_check import ensure_dependencies, get_available_models, get_first_available_model
-    ensure_dependencies(verbose=False)
-    AVAILABLE_MODELS = get_available_models()
-except ImportError:
-    print("提示: 运行 'python scripts/install_models.py --check' 检查依赖")
-    AVAILABLE_MODELS = []
+# 客户端初始化
+from client_utils import init_client, get_service_models
 
-# ========== 配置 ==========
-GATEWAY_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000")
-BASE_URL = f"{GATEWAY_URL}/api/v1"
+GATEWAY_URL, BASE_URL = init_client(verbose=True)
 
 # 所有可用模型（按家族分组）
 ALL_MODELS = {
