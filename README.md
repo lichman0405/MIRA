@@ -83,14 +83,55 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### ML Force Field Installation
 
+> ⚠️ **重要提示**: 不同 ML 力场模型有不兼容的依赖版本！建议使用多 conda 环境策略。
+
+**兼容的模型组合：**
+
+| 组合 | 模型 | 依赖 | 适用场景 |
+|------|------|------|----------|
+| 🅰 A | MACE + ORB | PyTorch + e3nn==0.4.4 | 推荐入门、MOF 基准测试 |
+| 🅱 B | FAIRChem + SevenNet | PyTorch + e3nn>=0.5 | 大规模材料预测 |
+| 🅲 C | MatGL | PyTorch + DGL | 电池材料、晶体结构 |
+| 🅳 D | GRACE | TensorFlow | 高精度力场 |
+
+**推荐安装方式（多环境）：**
+
 ```bash
-# Check which models are installed
+# 环境 1: MACE + ORB (推荐入门)
+conda create -n mira-mace python=3.10
+conda activate mira-mace
+pip install mira  # 或 pip install -e .
+python scripts/install_models.py --combo-a
+
+# 环境 2: FAIRChem + SevenNet
+conda create -n mira-fairchem python=3.10
+conda activate mira-fairchem
+pip install mira
+python scripts/install_models.py --combo-b
+```
+
+**使用安装脚本：**
+
+```bash
+# 检查已安装的模型
 python scripts/install_models.py --check
 
-# Install specific models
-python scripts/install_models.py --mace --orb --sevennet
+# 安装推荐组合 (MACE + ORB)
+python scripts/install_models.py --combo-a
 
-# Or install manually
+# 安装其他组合
+python scripts/install_models.py --combo-b  # FAIRChem + SevenNet
+python scripts/install_models.py --combo-c  # MatGL
+python scripts/install_models.py --combo-d  # GRACE
+
+# 安装单个模型
+python scripts/install_models.py --mace
+python scripts/install_models.py --mace --orb
+```
+
+**手动安装单个模型：**
+
+```bash
 pip install mace-torch      # MACE
 pip install orb-models      # ORB  
 pip install fairchem-core   # FAIRChem/OMAT24
