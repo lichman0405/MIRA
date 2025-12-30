@@ -1,11 +1,22 @@
 """
 MIRA Examples - 体积模量计算
 通过 E-V 曲线拟合 Birch-Murnaghan 状态方程计算体积模量
+
+运行前确保:
+1. 已安装 ML 力场: python scripts/install_models.py --check
+2. 服务已启动: uvicorn app.main:app --host 0.0.0.0 --port 8000
 """
 import requests
 import time
 from pathlib import Path
 from typing import Optional
+
+# 依赖检查
+try:
+    from setup_check import ensure_dependencies, get_first_available_model
+    ensure_dependencies(verbose=False)
+except ImportError:
+    print("提示: 运行 'python scripts/install_models.py --check' 检查依赖")
 
 # ========== 配置 ==========
 BASE_URL = "http://localhost:8000/api/v1"

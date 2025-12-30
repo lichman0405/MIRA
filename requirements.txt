@@ -38,28 +38,28 @@ pandas>=2.0.0
 # ML 力场模型 (按需安装)
 # ============================================
 # MACE
-pip install mace-torch
+# pip install mace-torch
 
 # ORB
-pip install orb-models
+# pip install orb-models
 
 # OMAT24 (FAIRChem)
-pip install fairchem-core
+# pip install fairchem-core
 
 # GRACE
-pip install tensorpotential
+# pip install tensorpotential
 
 # MatterSim
-pip install mattersim
+# pip install mattersim
 
 # SevenNet
-pip install sevenn
+# pip install sevenn
 
 # PosEGNN (IBM)
-pip install git+https://github.com/IBM/materials.git#subdirectory=models/pos_egnn
+# pip install git+https://github.com/IBM/materials.git#subdirectory=models/pos_egnn
 
 # MatGL
-pip install matgl
+# pip install matgl
 
 # ============================================
 # 可选依赖

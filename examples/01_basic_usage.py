@@ -1,9 +1,20 @@
 """
 MIRA Examples - 基础使用示例
 演示如何连接服务、查询模型、上传结构
+
+运行前确保:
+1. 已安装依赖: python examples/setup_check.py
+2. 服务已启动: uvicorn app.main:app --host 0.0.0.0 --port 8000
 """
 import requests
 from pathlib import Path
+
+# 依赖检查
+try:
+    from setup_check import ensure_dependencies, check_available_models
+    ensure_dependencies(verbose=False)
+except ImportError:
+    print("提示: 运行 'python examples/setup_check.py' 检查依赖")
 
 # ========== 配置 ==========
 BASE_URL = "http://localhost:8000/api/v1"

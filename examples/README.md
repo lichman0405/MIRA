@@ -7,6 +7,7 @@
 ```
 examples/
 ├── README.md                    # 本文档
+├── setup_check.py              # 依赖检查模块
 ├── structures/                  # 示例结构文件
 │   ├── HKUST-1.cif             # Cu-BTC MOF
 │   ├── MOF-5.cif               # Zn4O(BDC)3
@@ -23,17 +24,57 @@ examples/
 └── 07_full_benchmark.py        # 全模型基准测试
 ```
 
-## 前置条件
+## 快速开始
 
-1. 启动 MIRA 服务：
+### 1. 安装 ML 力场模型
+
+使用安装脚本：
+
 ```bash
-cd /path/to/MIRA
+# 检查当前安装状态
+python scripts/install_models.py --check
+
+# 最小安装（仅 MACE）
+python scripts/install_models.py --minimal
+
+# 推荐安装（MACE + ORB + MatGL）
+python scripts/install_models.py --recommended
+
+# 安装全部模型
+python scripts/install_models.py --all
+
+# 指定安装特定模型
+python scripts/install_models.py --mace --orb --sevennet
+```
+
+或手动安装：
+
+```bash
+pip install mace-torch      # MACE
+pip install orb-models      # ORB  
+pip install fairchem-core   # FAIRChem/OMAT24
+pip install tensorpotential # GRACE
+pip install mattersim       # MatterSim
+pip install sevenn          # SevenNet
+pip install matgl           # MatGL (M3GNet, CHGNet)
+```
+
+### 2. 检查依赖
+
+```bash
+python examples/setup_check.py
+```
+
+### 3. 启动 MIRA 服务
+
+```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-2. 安装 Python 依赖：
+### 4. 运行示例
+
 ```bash
-pip install requests
+python examples/01_basic_usage.py
 ```
 
 ## 示例结构
