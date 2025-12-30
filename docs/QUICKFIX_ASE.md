@@ -32,7 +32,7 @@ git pull
 ./scripts/deploy.sh test-cpu
 
 # 5. 检查日志（应该没有 ImportError 了）
-docker-compose -f deployments/docker-compose.cpu-test.yml logs mace-orb-worker | head -50
+docker-compose -f docker/docker-compose.cpu.yml logs mace-orb-worker | head -50
 
 # 6. 测试 API
 curl http://localhost:8000/health

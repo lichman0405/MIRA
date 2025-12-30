@@ -100,7 +100,7 @@ python scripts/test_ase_imports.py
 ./scripts/deploy.sh test-cpu
 
 # 检查日志
-docker-compose -f deployments/docker-compose.cpu-test.yml logs mace-orb-worker
+docker-compose -f docker/docker-compose.cpu.yml logs mace-orb-worker
 ```
 
 ### GPU 生产环境
@@ -113,7 +113,7 @@ docker-compose -f deployments/docker-compose.cpu-test.yml logs mace-orb-worker
 ./scripts/deploy.sh up
 
 # 检查所有 worker 日志
-docker-compose -f deployments/docker-compose.prod.yml logs
+docker-compose -f docker/docker-compose.microservices.yml logs
 ```
 
 ## 影响的模块
