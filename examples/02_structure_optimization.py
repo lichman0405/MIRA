@@ -180,49 +180,63 @@ if __name__ == "__main__":
     model_to_use = available_models[0]
     print(f"将使用模型: {model_to_use}")
     
-    # 加载示例结构
+    # 加载示例结构 - 优先选择较小的结构
     structures_dir = Path(__file__).parent / "structures"
-    cif_files = list(structures_dir.glob("*.cif"))
     
-    if not cif_files:
+    # 按优先级选择结构文件（小结构优先，避免 CPU 模式下内存不足）
+    preferred_files = ["ZIF-8.cif", "HKUST-1.cif", "UiO-66.cif", "MOF-5.cif"]
+    structure_file = None
+    
+    for name in preferred_files:
+        candidate = structures_dir / name
+        if candidate.exists():
+            structure_file = candidate
+            break
+    
+    if structure_file is None:
+        cif_files = list(structures_dir.glob("*.cif"))
+        if cif_files:
+            structure_file = cif_files[0]
+    
+    if structure_file is None:
         print(f"\n[警告] 在 {structures_dir} 中没有找到 CIF 文件")
         print("请添加 MOF 结构文件后重试")
         exit(1)
     
-    # 使用第一个结构文件
-    structure_file = cif_files[0]
     print(f"\n加载结构: {structure_file.name}")
     
     try:
         atoms = load_structure(str(structure_file))
+        n_atoms = len(atoms)
         print(f"  化学式: {atoms.get_chemical_formula()}")
-        print(f"  原子数: {len(atoms)}")
+        print(f"  原子数: {n_atoms}")
+        
+        # 警告大型结构
+        if n_atoms > 200:
+            print(f"  [警告] 结构较大 ({n_atoms} 原子)，CPU 模式下可能较慢")
     except Exception as e:
         print(f"加载结构失败: {e}")
         exit(1)
+    
+    # 根据结构大小调整参数
+    max_steps = 50 if len(atoms) > 200 else 100
     
     # 运行单模型优化
     result = run_optimization(
         atoms,
         model_name=model_to_use,
         fmax=0.05,
-        max_steps=100,
+        max_steps=max_steps,
         use_d3=True
     )
     
-    # 如果有多个可用模型，进行比较
-    if len(available_models) >= 2:
-        print("\n" + "=" * 60)
-        print("多模型比较 (使用前2个模型)")
-        print("=" * 60)
-        
-        compare_models(
-            atoms,
-            available_models[:2],
-            fmax=0.1,  # 使用较宽松的收敛标准加快测试
-            max_steps=50
-        )
+    # 检查结果是否合理
+    if "error" not in result:
+        initial_e = result.get("initial_energy", 0)
+        if abs(initial_e) > 1e6:
+            print("\n[警告] 初始能量异常高，结构可能有问题（原子重叠或坐标异常）")
     
     print("\n" + "=" * 60)
     print("优化示例完成！")
     print("=" * 60)
+    print("\n提示: 如需多模型比较，请使用 07_multi_model_benchmark.py")
