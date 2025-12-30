@@ -1,4 +1,4 @@
 # API v1 模块
-from .router import router
+from .router import api_router
 
-__all__ = ["router"]
+__all__ = ["api_router"]
