@@ -196,29 +196,49 @@ if __name__ == "__main__":
     for m in available_models:
         print(f"  - {m}")
     
-    # 加载示例结构
+    # 加载示例结构 - 优先选择小结构
     structures_dir = Path(__file__).parent / "structures"
-    cif_files = list(structures_dir.glob("*.cif"))
+    preferred_files = ["ZIF-8.cif", "HKUST-1.cif", "UiO-66.cif", "MOF-5.cif"]
+    structure_file = None
     
-    if not cif_files:
+    for name in preferred_files:
+        candidate = structures_dir / name
+        if candidate.exists():
+            structure_file = candidate
+            break
+    
+    if structure_file is None:
+        cif_files = list(structures_dir.glob("*.cif"))
+        if cif_files:
+            structure_file = cif_files[0]
+    
+    if structure_file is None:
         print(f"\n[警告] 在 {structures_dir} 中没有找到 CIF 文件")
         exit(1)
     
-    structure_file = cif_files[0]
     print(f"\n加载结构: {structure_file.name}")
     
     try:
         atoms = read(str(structure_file))
+        n_atoms = len(atoms)
         print(f"  化学式: {atoms.get_chemical_formula()}")
-        print(f"  原子数: {len(atoms)}")
+        print(f"  原子数: {n_atoms}")
+        if n_atoms > 200:
+            print(f"  [警告] 结构较大，CPU 模式下可能较慢")
     except Exception as e:
         print(f"加载结构失败: {e}")
         exit(1)
     
+    # 限制测试模型数（避免连续请求导致 Worker 崩溃）
+    max_models = 3
+    models_to_test = available_models[:max_models]
+    if len(available_models) > max_models:
+        print(f"\n[提示] 为避免过载，仅测试前 {max_models} 个模型")
+    
     # 运行基准测试
     results = run_benchmark_suite(
         atoms,
-        available_models,
+        models_to_test,
         run_optimization=True,
         run_single_point=True
     )

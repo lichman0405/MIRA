@@ -122,15 +122,26 @@ if __name__ == "__main__":
     model_to_use = available_models[0]
     print(f"将使用模型: {model_to_use}")
     
-    # 加载示例结构
+    # 加载示例结构 - 优先选择小结构
     structures_dir = Path(__file__).parent / "structures"
-    cif_files = list(structures_dir.glob("*.cif"))
+    preferred_files = ["ZIF-8.cif", "HKUST-1.cif", "UiO-66.cif", "MOF-5.cif"]
+    structure_file = None
     
-    if not cif_files:
+    for name in preferred_files:
+        candidate = structures_dir / name
+        if candidate.exists():
+            structure_file = candidate
+            break
+    
+    if structure_file is None:
+        cif_files = list(structures_dir.glob("*.cif"))
+        if cif_files:
+            structure_file = cif_files[0]
+    
+    if structure_file is None:
         print(f"\n[警告] 在 {structures_dir} 中没有找到 CIF 文件")
         exit(1)
     
-    structure_file = cif_files[0]
     print(f"\n加载结构: {structure_file.name}")
     
     try:
