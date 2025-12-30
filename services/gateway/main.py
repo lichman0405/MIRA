@@ -153,7 +153,11 @@ class ServiceClient:
         except httpx.TimeoutException:
             raise HTTPException(status_code=504, detail="Worker service timeout")
         except httpx.ConnectError:
-            raise HTTPException(status_code=503, detail=f"Worker service unavailable")
+            raise HTTPException(status_code=503, detail="Worker service unavailable")
+        except httpx.RemoteProtocolError:
+            raise HTTPException(status_code=503, detail="Worker service crashed or disconnected")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Gateway error: {str(e)}")
 
 
 # ============================================
