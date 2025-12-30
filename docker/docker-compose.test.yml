@@ -1,0 +1,72 @@
+# ============================================
+# MIRA 测试环境 - Docker Compose
+# ============================================
+#
+# 适用于: 单 GPU 或少量 GPU 测试环境
+# 只启动必要的服务进行测试
+#
+# 使用:
+#   docker-compose -f docker-compose.test.yml up -d
+#
+# ============================================
+
+services:
+  # Gateway
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gateway
+    image: mira-gateway:latest
+    container_name: mira-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MACE_ORB_URL=http://mira-mace-orb:8001
+      - FAIRCHEM_SEVENNET_URL=http://mira-fairchem-sevennet:8002
+      - MATGL_URL=http://mira-matgl:8003
+      - GRACE_URL=http://mira-grace:8004
+      - MATTERSIM_URL=http://mira-mattersim:8005
+    networks:
+      - mira-network
+    depends_on:
+      - mace-orb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MACE + ORB (测试主服务)
+  mace-orb:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mace-orb
+    image: mira-mace-orb:latest
+    container_name: mira-mace-orb
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1  # 使用任意一个可用 GPU
+              capabilities: [gpu]
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+
+networks:
+  mira-network:
+    driver: bridge
+
+volumes:
+  mira-models:
+    driver: local

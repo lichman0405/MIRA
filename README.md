@@ -2,6 +2,32 @@
 
 A comprehensive FastAPI service for benchmarking machine learning interatomic potentials on Metal-Organic Frameworks (MOFs).
 
+## 🏗️ Architecture
+
+MIRA 采用 **微服务架构**，每个模型家族运行在独立的 Docker 容器中，完美解决依赖冲突问题。
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      用户请求                                │
+│                   http://localhost:8000                      │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 MIRA Gateway (FastAPI)                       │
+│                    主服务 - 端口 8000                         │
+│  • 统一入口，自动路由                                         │
+│  • 支持多模型并行计算                                         │
+└──────┬──────────┬──────────┬──────────┬──────────┬──────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│ MACE+ORB │ │FAIRChem+ │ │  MatGL   │ │  GRACE   │ │MatterSim │
+│   :8001  │ │SevenNet  │ │  :8003   │ │  :8004   │ │  :8005   │
+│  GPU 0   │ │  :8002   │ │  GPU 2   │ │  GPU 3   │ │  GPU 4   │
+│ e3nn=0.4 │ │  GPU 1   │ │   DGL    │ │TensorFlow│ │ PyTorch  │
+└──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
+```
+
 ## Features
 
 ### Supported Models (20+ variants)
@@ -56,7 +82,32 @@ A comprehensive FastAPI service for benchmarking machine learning interatomic po
 - CUDA >= 12.0 (for GPU acceleration)
 - ASE >= 3.27.0 (includes NPT support)
 
-### Quick Start
+### 🐳 Docker 微服务部署 (推荐)
+
+```bash
+# Clone the repository
+git clone https://github.com/lichman0405/MIRA.git
+cd MIRA
+
+# 构建 Docker 镜像
+./scripts/deploy.sh build
+
+# 启动测试环境 (单 GPU: Gateway + MACE-ORB)
+./scripts/deploy.sh test
+
+# 启动生产环境 (多 GPU: 所有服务)
+./scripts/deploy.sh up
+
+# 查看状态
+./scripts/deploy.sh status
+
+# 访问 API 文档
+# http://localhost:8000/docs
+```
+
+详细部署指南: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+### Quick Start (传统方式)
 
 ```bash
 # Clone the repository
@@ -73,9 +124,7 @@ pip install -r requirements.txt
 
 # Install ML force field models
 python scripts/install_models.py --check      # Check status
-python scripts/install_models.py --minimal    # MACE only
-python scripts/install_models.py --recommended # MACE + ORB + MatGL
-python scripts/install_models.py --all        # All models
+python scripts/install_models.py --combo-a    # MACE + ORB (推荐)
 
 # Run the server
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

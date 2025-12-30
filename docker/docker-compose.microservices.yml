@@ -1,0 +1,262 @@
+# ============================================
+# MIRA - Docker Compose 微服务配置
+# ============================================
+#
+# 架构:
+#   Gateway (8000) -> Worker Services (8001-8005)
+#   每个 Worker 运行在独立容器，避免依赖冲突
+#
+# 使用:
+#   # 启动所有服务
+#   docker-compose -f docker-compose.microservices.yml up -d
+#
+#   # 只启动测试环境 (Gateway + MACE-ORB)
+#   docker-compose -f docker-compose.microservices.yml up -d gateway mace-orb
+#
+#   # 查看日志
+#   docker-compose -f docker-compose.microservices.yml logs -f
+#
+#   # 停止
+#   docker-compose -f docker-compose.microservices.yml down
+#
+# GPU 分配 (8 卡生产环境):
+#   - GPU 0: mace-orb
+#   - GPU 1: mace-orb (可选副本)
+#   - GPU 2: fairchem-sevennet
+#   - GPU 3: fairchem-sevennet (可选副本)
+#   - GPU 4: matgl
+#   - GPU 5: grace
+#   - GPU 6: mattersim
+#   - GPU 7: 备用/扩展
+#
+# ============================================
+
+services:
+  # ==========================================
+  # Gateway - 统一入口
+  # ==========================================
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gateway
+    image: mira-gateway:latest
+    container_name: mira-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MACE_ORB_URL=http://mira-mace-orb:8001
+      - FAIRCHEM_SEVENNET_URL=http://mira-fairchem-sevennet:8002
+      - MATGL_URL=http://mira-matgl:8003
+      - GRACE_URL=http://mira-grace:8004
+      - MATTERSIM_URL=http://mira-mattersim:8005
+    networks:
+      - mira-network
+    depends_on:
+      - mace-orb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # ==========================================
+  # MACE + ORB Worker
+  # ==========================================
+  mace-orb:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mace-orb
+    image: mira-mace-orb:latest
+    container_name: mira-mace-orb
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']  # 指定 GPU 0
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==========================================
+  # FAIRChem + SevenNet Worker
+  # ==========================================
+  fairchem-sevennet:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.fairchem-sevennet
+    image: mira-fairchem-sevennet:latest
+    container_name: mira-fairchem-sevennet
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']  # 指定 GPU 1
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=1
+      - CUDA_VISIBLE_DEVICES=0  # 容器内部看到的是 GPU 0
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==========================================
+  # MatGL Worker (M3GNet + CHGNet)
+  # ==========================================
+  matgl:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.matgl
+    image: mira-matgl:latest
+    container_name: mira-matgl
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['2']  # 指定 GPU 2
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=2
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==========================================
+  # GRACE Worker (TensorFlow)
+  # ==========================================
+  grace:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.grace
+    image: mira-grace:latest
+    container_name: mira-grace
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['3']  # 指定 GPU 3
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=3
+      - CUDA_VISIBLE_DEVICES=0
+      - TF_CPP_MIN_LOG_LEVEL=2
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # ==========================================
+  # MatterSim Worker
+  # ==========================================
+  mattersim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.mattersim
+    image: mira-mattersim:latest
+    container_name: mira-mattersim
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['4']  # 指定 GPU 4
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=4
+      - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - mira-models:/app/models
+    networks:
+      - mira-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+# ============================================
+# 网络
+# ============================================
+networks:
+  mira-network:
+    driver: bridge
+
+# ============================================
+# 持久化存储
+# ============================================
+volumes:
+  mira-models:
+    driver: local
