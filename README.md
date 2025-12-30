@@ -1,8 +1,8 @@
-# MIRA - MiQroEra Interatomic-potential Reliability Arena
+# MIRA - MiQroEra 机器学习原子间势可靠性基准平台
 
-A comprehensive FastAPI service for benchmarking machine learning interatomic potentials on Metal-Organic Frameworks (MOFs).
+一个用于在金属有机框架 (MOFs) 上对机器学习原子间势进行全面基准测试的 FastAPI 服务。
 
-## 🏗️ Architecture
+## 🏗️ 系统架构
 
 MIRA 采用 **微服务架构**，每个模型家族运行在独立的 Docker 容器中，完美解决依赖冲突问题。
 
@@ -28,72 +28,74 @@ MIRA 采用 **微服务架构**，每个模型家族运行在独立的 Docker �
 └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
 ```
 
-## Features
+## ✨ 功能特性
 
-### Supported Models (20+ variants)
+### 支持的模型 (20+ 变体)
 
-| Family | Models | Description |
-|--------|--------|-------------|
-| **MACE** | MP, OFF23, OMAT, MPA, ANI | Equivariant message passing |
-| **ORB** | v2, v3, OMAT-v3-LoRA | Orbital-based descriptors |
-| **OMAT24** | OMat, eqV2 variants | Meta FAIRChem models |
-| **GRACE** | 2L, 2M | General-purpose MLFF |
-| **MatterSim** | 5M | Materials simulation |
-| **SevenNet** | 0, MF-ompa, l3i5 | Seven-body neural network |
-| **PosEGNN** | IBM model | Position-enhanced GNN |
-| **MatGL** | M3GNet, CHGNet | Graph neural networks |
+| 模型家族 | 模型变体 | 描述 |
+|----------|----------|------|
+| **MACE** | MP, OFF23, OMAT, MPA, ANI | 等变消息传递网络 |
+| **ORB** | v2, v3, OMAT-v3-LoRA | 轨道基描述符 |
+| **OMAT24** | OMat, eqV2 变体 | Meta FAIRChem 模型 |
+| **GRACE** | 2L, 2M | 通用 ML 力场 |
+| **MatterSim** | 5M | 材料模拟 |
+| **SevenNet** | 0, MF-ompa, l3i5 | 七体神经网络 |
+| **PosEGNN** | IBM model | 位置增强 GNN |
+| **MatGL** | M3GNet, CHGNet | 图神经网络 |
 
-### Computational Tasks
+### 计算任务
 
-1. **Structure Optimization**
-   - Optimizers: BFGS, FIRE, LBFGS
-   - Cell filter: FrechetCellFilter for full relaxation
-   - D3 dispersion correction support
+1. **结构优化**
+   - 优化器: BFGS, FIRE, LBFGS
+   - 晶胞过滤器: FrechetCellFilter 用于全松弛
+   - 支持 D3 色散校正
 
-2. **MD Stability Testing**
-   - NVT equilibration (Langevin thermostat)
-   - NPT production (NPTBerendsen)
-   - Coordination number analysis
-   - RMSD tracking
+2. **MD 稳定性测试**
+   - NVT 平衡 (Langevin 恒温器)
+   - NPT 生产 (NPTBerendsen)
+   - 配位数分析
+   - RMSD 追踪
 
-3. **Bulk Modulus Calculation**
-   - E-V curve sampling
-   - Birch-Murnaghan EOS fitting
-   - Automatic R² quality assessment
+3. **体积模量计算**
+   - E-V 曲线采样
+   - Birch-Murnaghan 状态方程拟合
+   - 自动 R² 质量评估
 
-4. **Heat Capacity**
-   - Phonon calculations with Phonopy
-   - Temperature-dependent Cv
-   - Imaginary mode detection
+4. **热容计算**
+   - 使用 Phonopy 进行声子计算
+   - 温度依赖的 Cv
+   - 虚频模式检测
 
-5. **QMOF Energy Evaluation**
-   - Single-point energy calculation
-   - Comparison with DFT references
+5. **QMOF 能量评估**
+   - 单点能量计算
+   - 与 DFT 参考值比较
 
-6. **Interaction Energy Analysis**
-   - Host-guest decomposition
-   - Component energy breakdown
+6. **相互作用能分析**
+   - 主客体分解
+   - 组分能量分解
 
-## Installation
+## 📦 安装
 
-### Requirements
+### 环境要求
 
 - Python >= 3.10
-- CUDA >= 12.0 (for GPU acceleration)
-- ASE >= 3.27.0 (includes NPT support)
+- CUDA >= 12.0 (用于 GPU 加速)
+- ASE >= 3.27.0 (包含 NPT 支持)
 
 ### 🐳 Docker 微服务部署 (推荐)
 
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone https://github.com/lichman0405/MIRA.git
 cd MIRA
 
 # 构建 Docker 镜像
-./scripts/deploy.sh build
+./scripts/deploy.sh build        # GPU 版本
+./scripts/deploy.sh build-cpu    # CPU 版本 (无 GPU 环境)
 
 # 启动测试环境 (单 GPU: Gateway + MACE-ORB)
-./scripts/deploy.sh test
+./scripts/deploy.sh test         # GPU 模式
+./scripts/deploy.sh test-cpu     # CPU 模式
 
 # 启动生产环境 (多 GPU: 所有服务)
 ./scripts/deploy.sh up
@@ -107,32 +109,32 @@ cd MIRA
 
 详细部署指南: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
-### Quick Start (传统方式)
+### 快速开始 (传统方式)
 
 ```bash
-# Clone the repository
+# 克隆仓库
 git clone https://github.com/lichman0405/MIRA.git
 cd MIRA
 
-# Create virtual environment
+# 创建虚拟环境
 python -m venv venv
 source venv/bin/activate  # Linux/macOS
-# or: venv\Scripts\activate  # Windows
+# 或: venv\Scripts\activate  # Windows
 
-# Install base dependencies
+# 安装基础依赖
 pip install -r requirements.txt
 
-# Install ML force field models
-python scripts/install_models.py --check      # Check status
+# 安装 ML 力场模型
+python scripts/install_models.py --check      # 检查状态
 python scripts/install_models.py --combo-a    # MACE + ORB (推荐)
 
-# Run the server
+# 运行服务
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### ML Force Field Installation
+### ML 力场安装
 
-> ⚠️ **重要提示**: 不同 ML 力场模型有不兼容的依赖版本！建议使用多 conda 环境策略。
+> ⚠️ **重要提示**: 不同 ML 力场模型有不兼容的依赖版本！建议使用 Docker 微服务或多 conda 环境策略。
 
 **兼容的模型组合：**
 
@@ -149,13 +151,13 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 # 环境 1: MACE + ORB (推荐入门)
 conda create -n mira-mace python=3.10
 conda activate mira-mace
-pip install mira  # 或 pip install -e .
+pip install -e .
 python scripts/install_models.py --combo-a
 
 # 环境 2: FAIRChem + SevenNet
 conda create -n mira-fairchem python=3.10
 conda activate mira-fairchem
-pip install mira
+pip install -e .
 python scripts/install_models.py --combo-b
 ```
 
@@ -190,41 +192,44 @@ pip install sevenn          # SevenNet
 pip install matgl           # MatGL (M3GNet, CHGNet)
 ```
 
-### Docker Deployment
+## 📖 API 使用
 
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# View logs
-docker-compose logs -f mira
-
-# Stop
-docker-compose down
-```
-
-## API Usage
-
-### Base URL
+### 基础 URL
 ```
 http://localhost:8000/api/v1
 ```
 
-### Interactive Documentation
+### 交互式文档
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-### Example: Structure Optimization
+### 环境变量配置
+
+连接远程服务器时，设置环境变量：
+
+```bash
+# Linux/macOS
+export MIRA_GATEWAY_URL=http://192.168.100.207:8000
+
+# Windows PowerShell
+$env:MIRA_GATEWAY_URL = "http://192.168.100.207:8000"
+```
+
+### 示例：结构优化
 
 ```python
+import os
 import requests
 
-# Upload structure
+# 获取服务地址
+BASE_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000") + "/api/v1"
+
+# 上传结构
 with open("structure.cif", "r") as f:
     content = f.read()
 
 response = requests.post(
-    "http://localhost:8000/api/v1/structures/upload",
+    f"{BASE_URL}/structures/upload",
     data={
         "name": "MOF-5",
         "format": "cif",
@@ -233,9 +238,9 @@ response = requests.post(
 )
 structure_id = response.json()["id"]
 
-# Submit optimization task
+# 提交优化任务
 response = requests.post(
-    "http://localhost:8000/api/v1/tasks/optimization",
+    f"{BASE_URL}/tasks/optimization",
     json={
         "structure_id": structure_id,
         "model_key": "mace-mp",
@@ -248,21 +253,21 @@ response = requests.post(
 )
 task_id = response.json()["task_id"]
 
-# Check progress
-response = requests.get(f"http://localhost:8000/api/v1/tasks/{task_id}")
+# 检查进度
+response = requests.get(f"{BASE_URL}/tasks/{task_id}")
 print(response.json())
 
-# Get result when completed
-response = requests.get(f"http://localhost:8000/api/v1/results/{task_id}")
+# 获取结果
+response = requests.get(f"{BASE_URL}/results/{task_id}")
 result = response.json()
-print(f"Final energy: {result['final_energy']} eV")
+print(f"最终能量: {result['final_energy']} eV")
 ```
 
-### Example: MD Stability Test
+### 示例：MD 稳定性测试
 
 ```python
 response = requests.post(
-    "http://localhost:8000/api/v1/tasks/stability",
+    f"{BASE_URL}/tasks/stability",
     json={
         "structure_id": structure_id,
         "model_key": "mace-mp",
@@ -278,108 +283,127 @@ response = requests.post(
 )
 ```
 
-## Configuration
+## ⚙️ 配置
 
-Environment variables (or `.env` file):
+环境变量（或 `.env` 文件）：
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEBUG` | false | Enable debug mode |
-| `DEFAULT_DEVICE` | cuda | Default compute device |
-| `STRUCTURES_DIR` | ./data/structures | Structure storage |
-| `RESULTS_DIR` | ./data/results | Results storage |
-| `MAX_WORKERS` | 4 | Parallel task workers |
-| `MAX_MD_STEPS` | 100000 | MD step limit |
-| `MAX_OPT_STEPS` | 2000 | Optimization step limit |
-| `CORS_ORIGINS` | ["*"] | Allowed CORS origins |
+| 变量名 | 默认值 | 说明 |
+|--------|--------|------|
+| `DEBUG` | false | 启用调试模式 |
+| `DEFAULT_DEVICE` | cuda | 默认计算设备 |
+| `STRUCTURES_DIR` | ./data/structures | 结构存储目录 |
+| `RESULTS_DIR` | ./data/results | 结果存储目录 |
+| `MAX_WORKERS` | 4 | 并行任务工作线程数 |
+| `MAX_MD_STEPS` | 100000 | MD 步数限制 |
+| `MAX_OPT_STEPS` | 2000 | 优化步数限制 |
+| `CORS_ORIGINS` | ["*"] | 允许的 CORS 来源 |
 
-## Project Structure
+## 📁 项目结构
 
 ```
 MIRA/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI application
-│   ├── config.py            # Configuration
-│   ├── dependencies.py      # Dependency injection
+│   ├── main.py              # FastAPI 应用入口
+│   ├── config.py            # 配置管理
+│   ├── dependencies.py      # 依赖注入
 │   ├── api/
 │   │   └── v1/
-│   │       ├── router.py    # API router
-│   │       ├── models.py    # Model endpoints
-│   │       ├── structures.py# Structure endpoints
-│   │       ├── tasks.py     # Task endpoints
-│   │       └── results.py   # Result endpoints
+│   │       ├── router.py    # API 路由
+│   │       ├── models.py    # 模型端点
+│   │       ├── structures.py# 结构端点
+│   │       ├── tasks.py     # 任务端点
+│   │       └── results.py   # 结果端点
 │   ├── schemas/
-│   │   ├── model.py         # Model schemas
-│   │   ├── structure.py     # Structure schemas
-│   │   ├── task.py          # Task schemas
-│   │   └── result.py        # Result schemas
+│   │   ├── model.py         # 模型数据模式
+│   │   ├── structure.py     # 结构数据模式
+│   │   ├── task.py          # 任务数据模式
+│   │   └── result.py        # 结果数据模式
 │   ├── models/
-│   │   ├── base.py          # Base adapter class
-│   │   ├── registry.py      # Model registry
-│   │   ├── mace_adapter.py  # MACE adapter
-│   │   ├── orb_adapter.py   # ORB adapter
-│   │   └── ...              # Other adapters
+│   │   ├── base.py          # 基础适配器类
+│   │   ├── registry.py      # 模型注册中心
+│   │   ├── mace_adapter.py  # MACE 适配器
+│   │   ├── orb_adapter.py   # ORB 适配器
+│   │   └── ...              # 其他适配器
 │   ├── services/
-│   │   ├── optimization.py  # Optimization service
-│   │   ├── stability.py     # Stability service
-│   │   ├── bulk_modulus.py  # Bulk modulus service
-│   │   ├── heat_capacity.py # Heat capacity service
+│   │   ├── optimization.py  # 优化服务
+│   │   ├── stability.py     # 稳定性服务
+│   │   ├── bulk_modulus.py  # 体积模量服务
+│   │   ├── heat_capacity.py # 热容服务
 │   │   ├── structure_service.py
 │   │   └── task_service.py
 │   └── core/
-│       └── ase_utils.py     # ASE utilities
+│       └── ase_utils.py     # ASE 工具函数
+├── services/                 # 微服务工作节点
+│   ├── gateway/             # API 网关
+│   ├── worker_mace_orb/     # MACE+ORB 工作节点
+│   ├── worker_fairchem/     # FAIRChem 工作节点
+│   ├── worker_matgl/        # MatGL 工作节点
+│   ├── worker_grace/        # GRACE 工作节点
+│   └── worker_mattersim/    # MatterSim 工作节点
+├── docker/                   # Docker 配置
+│   ├── docker-compose.microservices.yml  # 生产环境
+│   ├── docker-compose.test.yml           # 测试环境
+│   └── docker-compose.cpu.yml            # CPU 模式
 ├── scripts/
-│   └── install_models.py    # ML force field installer
+│   ├── install_models.py    # ML 力场安装脚本
+│   └── deploy.sh            # 部署脚本
 ├── examples/
-│   ├── setup_check.py       # Dependency checker
-│   ├── 01_basic_usage.py    # Basic API usage
-│   ├── 02_structure_optimization.py
-│   ├── 03_md_stability.py   # MD simulation
-│   ├── 04_bulk_modulus.py   # Bulk modulus
-│   ├── 05_heat_capacity.py  # Phonon/Cv
-│   ├── 06_acetylene_adsorption.py
-│   ├── 07_full_benchmark.py # Full benchmark
-│   └── structures/          # Sample MOF structures
+│   ├── setup_check.py       # 依赖检查器
+│   ├── config.py            # 服务器配置
+│   ├── 01_basic_usage.py    # 基础 API 使用
+│   ├── 02_structure_optimization.py  # 结构优化
+│   ├── 03_md_stability.py   # MD 模拟
+│   ├── 04_bulk_modulus.py   # 体积模量
+│   ├── 05_heat_capacity.py  # 声子/热容
+│   ├── 06_acetylene_adsorption.py    # 乙炔吸附
+│   ├── 07_full_benchmark.py # 完整基准测试
+│   └── structures/          # 示例 MOF 结构
+├── docs/
+│   └── DEPLOYMENT.md        # 部署文档
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
 ```
 
-## Examples
+## 📚 示例
 
-See the [examples/](examples/) directory for comprehensive usage examples:
+查看 [examples/](examples/) 目录获取完整使用示例：
 
 ```bash
-# Check dependencies first
+# 首先检查依赖
 python examples/setup_check.py
 
-# Run examples
+# 运行示例
 python examples/01_basic_usage.py
 python examples/02_structure_optimization.py
 python examples/07_full_benchmark.py
+
+# 连接远程服务器运行
+export MIRA_GATEWAY_URL=http://192.168.100.207:8000
+python examples/01_basic_usage.py
 ```
 
-## Notes
+## 📝 注意事项
 
-- **GPU Memory**: Large models (MACE-MPA, SevenNet-l3i5) may require 16GB+ VRAM
-- **ASE Version**: Requires ASE >= 3.27.0 for NPT dynamics support
-- **D3 Correction**: Some tasks benefit from DFT-D3 dispersion correction
-- **Phonon Calculations**: Heat capacity requires sufficient supercell size
+- **GPU 内存**: 大型模型 (MACE-MPA, SevenNet-l3i5) 可能需要 16GB+ 显存
+- **ASE 版本**: 需要 ASE >= 3.27.0 以支持 NPT 动力学
+- **D3 校正**: 某些任务可从 DFT-D3 色散校正中受益
+- **声子计算**: 热容计算需要足够的超胞尺寸
 
-## Author
+## 👤 作者
 
-**Shibo Li** (lishibo)  
+**李世博** (Shibo Li)  
 📧 shadow.li981@gmail.com
 
-## License
+## 📄 许可证
 
 MIT License
 
-## Citation
+## 📖 引用
 
-If you use MIRA in your research, please cite:
+如果您在研究中使用了 MIRA，请引用：
 
 ```bibtex
 @software{mira2025,
