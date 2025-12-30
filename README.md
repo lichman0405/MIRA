@@ -109,6 +109,14 @@ cd MIRA
 
 详细部署指南: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
+### 故障排查
+
+遇到问题？查看相关文档：
+
+- **PyTorch/torchvision 版本错误**: [docs/TROUBLESHOOTING_PYTORCH.md](docs/TROUBLESHOOTING_PYTORCH.md)
+- **ASE 导入错误**: [docs/QUICKFIX_ASE.md](docs/QUICKFIX_ASE.md)
+- **CPU 兼容性问题**: [docs/CPU_COMPATIBILITY.md](docs/CPU_COMPATIBILITY.md)
+
 ### 快速开始 (传统方式)
 
 ```bash
