@@ -111,11 +111,12 @@ cd MIRA
 
 ### 故障排查
 
-遇到问题？查看相关文档：
+遇到问题？请检查：
 
-- **PyTorch/torchvision 版本错误**: [docs/TROUBLESHOOTING_PYTORCH.md](docs/TROUBLESHOOTING_PYTORCH.md)
-- **ASE 导入错误**: [docs/QUICKFIX_ASE.md](docs/QUICKFIX_ASE.md)
-- **CPU 兼容性问题**: [docs/CPU_COMPATIBILITY.md](docs/CPU_COMPATIBILITY.md)
+- **Docker 服务状态**: `docker compose ps` 查看容器状态
+- **服务健康检查**: 访问 http://localhost:8000/health
+- **日志**: `docker compose logs -f gateway` 查看网关日志
+- **API 文档**: 访问 http://localhost:8000/docs 查看交互式文档
 
 ### 快速开始 (传统方式)
 
@@ -354,10 +355,7 @@ MIRA/
 │   └── structures/               # 示例 MOF 结构
 ├── docs/                     # 文档目录
 │   ├── API.md               # API 接口文档
-│   ├── DEPLOYMENT.md        # 部署指南
-│   ├── CPU_COMPATIBILITY.md # CPU 模式兼容性
-│   ├── TROUBLESHOOTING_PYTORCH.md  # PyTorch 故障排查
-│   └── QUICKFIX_ASE.md      # ASE 快速修复
+│   └── DEPLOYMENT.md        # 部署指南
 ├── .dockerignore            # Docker 构建忽略文件
 ├── .env.example             # 环境变量模板
 ├── LICENSE                  # MIT 许可证
