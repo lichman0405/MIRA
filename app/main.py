@@ -74,10 +74,10 @@ A comprehensive RESTful API for benchmarking machine learning interatomic potent
     )
     
     # CORS 中间件
-    if settings.cors_origins:
+    if settings.CORS_ORIGINS:
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=settings.cors_origins,
+            allow_origins=settings.CORS_ORIGINS,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"]
