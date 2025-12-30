@@ -1,0 +1,73 @@
+# MIRA - Docker Compose 配置
+# 使用: docker-compose up -d
+
+services:
+  mira:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mira:latest
+    container_name: mira-service
+    restart: unless-stopped
+    
+    # GPU 支持
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    
+    # 端口映射
+    ports:
+      - "8000:8000"
+    
+    # 数据卷
+    volumes:
+      - mira-structures:/data/structures
+      - mira-results:/data/results
+      - mira-models:/data/models
+      # 可选：挂载本地数据
+      # - ./data/structures:/data/structures
+      # - ./data/results:/data/results
+    
+    # 环境变量
+    environment:
+      - DEBUG=false
+      - DEFAULT_DEVICE=cuda
+      - STRUCTURES_DIR=/data/structures
+      - RESULTS_DIR=/data/results
+      - MODELS_CACHE_DIR=/data/models
+      - MAX_WORKERS=4
+      - MAX_MD_STEPS=100000
+      - MAX_OPT_STEPS=2000
+      - CORS_ORIGINS=["*"]
+    
+    # 资源限制
+    # mem_limit: 32g
+    # cpus: 8
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+# 持久化存储卷
+volumes:
+  mira-structures:
+    driver: local
+  mira-results:
+    driver: local
+  mira-models:
+    driver: local

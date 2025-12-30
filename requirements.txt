@@ -1,0 +1,83 @@
+# ============================================
+# MIRA - MOF ML Force Field Benchmark API
+# 依赖配置文件
+# ============================================
+
+# Web 框架
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# 数据验证
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# ============================================
+# ASE (Atomic Simulation Environment)
+# 版本 >= 3.27.0 已包含完整 NPT 动力学支持
+# 包括: NPTBerendsen, IsotropicMTKNPT, MTKNPT, 
+#       LangevinBAOAB, MelchionnaNPT
+# ============================================
+ase>=3.27.0
+
+# 声子计算
+phonopy>=2.20.0
+
+# D3 色散校正
+torch-dftd>=0.4.0
+
+# 数据处理
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=2.0.0
+
+# PyTorch (根据 CUDA 版本安装)
+# torch>=2.0.0
+
+# ============================================
+# ML 力场模型 (按需安装)
+# ============================================
+# MACE
+# pip install mace-torch
+
+# ORB
+# pip install orb-models
+
+# OMAT24 (FAIRChem)
+# pip install fairchem-core
+
+# GRACE
+# pip install tensorpotential
+
+# MatterSim
+# pip install mattersim
+
+# SevenNet
+# pip install sevenn
+
+# PosEGNN (IBM)
+# pip install git+https://github.com/IBM/materials.git#subdirectory=models/pos_egnn
+
+# MatGL
+# pip install matgl
+
+# ============================================
+# 可选依赖
+# ============================================
+# 数据库
+# sqlalchemy>=2.0.0
+# aiosqlite>=0.19.0
+
+# Redis (任务队列)
+# redis>=5.0.0
+
+# HuggingFace Hub (模型下载)
+huggingface-hub>=0.20.0
+
+# 日志
+structlog>=24.0.0
+
+# 测试
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0
