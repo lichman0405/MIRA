@@ -21,7 +21,7 @@ def get_model_registry() -> ModelRegistry:
     global _model_registry
     if _model_registry is None:
         settings = get_settings()
-        _model_registry = ModelRegistry(default_device=settings.default_device)
+        _model_registry = ModelRegistry(default_device=settings.DEFAULT_DEVICE)
     return _model_registry
 
 
@@ -31,7 +31,7 @@ def get_structure_service() -> StructureService:
     if _structure_service is None:
         settings = get_settings()
         _structure_service = StructureService(
-            structures_dir=Path(settings.structures_dir)
+            structures_dir=Path(settings.STRUCTURES_DIR)
         )
     return _structure_service
 
@@ -43,9 +43,9 @@ def get_task_service() -> TaskService:
         settings = get_settings()
         _task_service = TaskService(
             model_registry=get_model_registry(),
-            structures_dir=Path(settings.structures_dir),
-            results_dir=Path(settings.results_dir),
-            max_workers=settings.max_workers
+            structures_dir=Path(settings.STRUCTURES_DIR),
+            results_dir=Path(settings.RESULTS_DIR),
+            max_workers=settings.MAX_CONCURRENT_TASKS
         )
     return _task_service
 
@@ -55,8 +55,8 @@ async def startup_handler():
     settings = get_settings()
     
     # 确保目录存在
-    Path(settings.structures_dir).mkdir(parents=True, exist_ok=True)
-    Path(settings.results_dir).mkdir(parents=True, exist_ok=True)
+    Path(settings.STRUCTURES_DIR).mkdir(parents=True, exist_ok=True)
+    Path(settings.RESULTS_DIR).mkdir(parents=True, exist_ok=True)
     
     # 初始化服务
     get_model_registry()
