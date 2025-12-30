@@ -176,19 +176,20 @@ start_all() {
 
 # 启动所有 CPU 服务
 start_all_cpu() {
-    log_info "启动所有微服务 (CPU)..."
+    log_info "启动所有微服务 (CPU 生产模式)..."
     cd "$DOCKER_DIR"
     
-    docker compose -f docker-compose.cpu.yml up -d
+    docker compose -f docker-compose.cpu-prod.yml up -d
     
-    log_info "等待服务启动..."
-    sleep 15
+    log_info "等待服务启动 (CPU 模式需要较长时间)..."
+    sleep 60
     
     log_info "检查服务状态..."
-    docker compose -f docker-compose.cpu.yml ps
+    docker compose -f docker-compose.cpu-prod.yml ps
     
-    log_success "CPU 服务已启动"
+    log_success "CPU 生产环境已启动"
     log_info "访问 http://localhost:8000/docs 查看 API 文档"
+    log_warn "注意: CPU 模式计算速度较慢，适合小批量计算"
 }
 
 # 停止服务
@@ -199,6 +200,7 @@ stop_services() {
     docker compose -f docker-compose.microservices.yml down 2>/dev/null || true
     docker compose -f docker-compose.test.yml down 2>/dev/null || true
     docker compose -f docker-compose.cpu.yml down 2>/dev/null || true
+    docker compose -f docker-compose.cpu-prod.yml down 2>/dev/null || true
     
     log_success "服务已停止"
 }

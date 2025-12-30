@@ -8,6 +8,7 @@
 examples/
 ├── README.md                    # 本文档
 ├── setup_check.py              # 依赖检查模块
+├── config.py                   # 服务器配置模块
 ├── structures/                  # 示例结构文件
 │   ├── HKUST-1.cif             # Cu-BTC MOF
 │   ├── MOF-5.cif               # Zn4O(BDC)3
@@ -21,30 +22,33 @@ examples/
 ├── 04_bulk_modulus.py          # 体积模量计算
 ├── 05_heat_capacity.py         # 热容计算
 ├── 06_acetylene_adsorption.py  # 乙炔吸附分析
-└── 07_full_benchmark.py        # 全模型基准测试
+├── 07_full_benchmark.py        # 全模型基准测试
+└── 08_microservices_client.py  # 微服务异步客户端
 ```
 
 ## 快速开始
 
 ### 1. 安装 ML 力场模型
 
-使用安装脚本：
+> ⚠️ **重要**: 不同模型有依赖冲突！建议使用 Docker 微服务或按组合安装。
+
+使用安装脚本（推荐按组合安装）：
 
 ```bash
 # 检查当前安装状态
 python scripts/install_models.py --check
 
-# 最小安装（仅 MACE）
-python scripts/install_models.py --minimal
+# 推荐组合 A: MACE + ORB (入门首选)
+python scripts/install_models.py --combo-a
 
-# 推荐安装（MACE + ORB + MatGL）
-python scripts/install_models.py --recommended
+# 组合 B: FAIRChem + SevenNet
+python scripts/install_models.py --combo-b
 
-# 安装全部模型
-python scripts/install_models.py --all
+# 组合 C: MatGL (M3GNet, CHGNet)
+python scripts/install_models.py --combo-c
 
-# 指定安装特定模型
-python scripts/install_models.py --mace --orb --sevennet
+# 组合 D: GRACE
+python scripts/install_models.py --combo-d
 ```
 
 或手动安装：
@@ -67,14 +71,47 @@ python examples/setup_check.py
 
 ### 3. 启动 MIRA 服务
 
+**方式一：本地启动（单环境）**
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+**方式二：Docker 微服务（推荐，支持所有模型）**
+```bash
+# GPU 模式
+./scripts/deploy.sh build && ./scripts/deploy.sh up
+
+# CPU 模式（无 GPU 环境）
+./scripts/deploy.sh build-cpu && ./scripts/deploy.sh up-cpu
 ```
 
 ### 4. 运行示例
 
 ```bash
+# 本地服务
 python examples/01_basic_usage.py
+
+# 连接远程服务器
+export MIRA_GATEWAY_URL=http://192.168.100.207:8000
+python examples/01_basic_usage.py
+```
+
+## 环境变量配置
+
+所有示例都支持通过环境变量配置服务器地址：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `MIRA_GATEWAY_URL` | `http://localhost:8000` | MIRA Gateway 地址 |
+
+**设置方法：**
+
+```bash
+# Linux/macOS
+export MIRA_GATEWAY_URL=http://192.168.100.207:8000
+
+# Windows PowerShell
+$env:MIRA_GATEWAY_URL = "http://192.168.100.207:8000"
 ```
 
 ## 示例结构
@@ -252,16 +289,22 @@ structure_id = response.json()['id']
 **Q: 服务无法连接？**
 - 确保 MIRA 服务已启动
 - 检查端口是否正确 (默认 8000)
+- 如连接远程服务器，检查环境变量 `MIRA_GATEWAY_URL` 是否设置正确
 
 **Q: 模型加载失败？**
 - 检查 GPU 显存是否充足
 - 确保相关模型包已安装
+- 使用 `python scripts/install_models.py --check` 检查安装状态
 
 **Q: 计算超时？**
 - 增加 timeout 参数
 - 减少 MD 步数或优化步数
 
+**Q: 依赖冲突？**
+- 使用 Docker 微服务架构: `./scripts/deploy.sh up`
+- 或使用组合安装: `--combo-a`, `--combo-b` 等
+
 ## 联系
 
-**作者**: Shibo Li  
+**作者**: 李世博 (Shibo Li)  
 **邮箱**: shadow.li981@gmail.com

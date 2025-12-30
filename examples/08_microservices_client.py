@@ -3,18 +3,31 @@
 MIRA 微服务客户端示例
 
 演示如何调用 MIRA Gateway 进行计算
+
+运行前确保:
+1. 服务已启动: 
+   - 本地: uvicorn app.main:app --host 0.0.0.0 --port 8000
+   - Docker: ./scripts/deploy.sh test
+
+支持环境变量:
+    MIRA_GATEWAY_URL=http://192.168.100.207:8000  # 测试服务器
 """
+import os
 import httpx
 import asyncio
 from typing import List, Dict, Any
+
+# ========== 配置 ==========
+GATEWAY_URL = os.getenv("MIRA_GATEWAY_URL", "http://localhost:8000")
 
 
 class MIRAClient:
     """MIRA 微服务客户端"""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
-        self.client = httpx.AsyncClient(base_url=base_url, timeout=600.0)
+    def __init__(self, base_url: str = None):
+        self.base_url = base_url or GATEWAY_URL
+        self.client = httpx.AsyncClient(base_url=self.base_url, timeout=600.0)
+        print(f"[配置] MIRA Gateway: {self.base_url}")
     
     async def close(self):
         await self.client.aclose()

@@ -1,4 +1,4 @@
-# MIRA - MiQroEra 机器学习原子间势可靠性基准平台
+# MIRA - MiQroEra Interatomic-potential Reliability Arena
 
 一个用于在金属有机框架 (MOFs) 上对机器学习原子间势进行全面基准测试的 FastAPI 服务。
 
@@ -302,68 +302,40 @@ response = requests.post(
 
 ```
 MIRA/
-├── app/
-│   ├── __init__.py
+├── app/                      # 主应用代码
 │   ├── main.py              # FastAPI 应用入口
 │   ├── config.py            # 配置管理
-│   ├── dependencies.py      # 依赖注入
-│   ├── api/
-│   │   └── v1/
-│   │       ├── router.py    # API 路由
-│   │       ├── models.py    # 模型端点
-│   │       ├── structures.py# 结构端点
-│   │       ├── tasks.py     # 任务端点
-│   │       └── results.py   # 结果端点
-│   ├── schemas/
-│   │   ├── model.py         # 模型数据模式
-│   │   ├── structure.py     # 结构数据模式
-│   │   ├── task.py          # 任务数据模式
-│   │   └── result.py        # 结果数据模式
-│   ├── models/
-│   │   ├── base.py          # 基础适配器类
-│   │   ├── registry.py      # 模型注册中心
-│   │   ├── mace_adapter.py  # MACE 适配器
-│   │   ├── orb_adapter.py   # ORB 适配器
-│   │   └── ...              # 其他适配器
-│   ├── services/
-│   │   ├── optimization.py  # 优化服务
-│   │   ├── stability.py     # 稳定性服务
-│   │   ├── bulk_modulus.py  # 体积模量服务
-│   │   ├── heat_capacity.py # 热容服务
-│   │   ├── structure_service.py
-│   │   └── task_service.py
-│   └── core/
-│       └── ase_utils.py     # ASE 工具函数
+│   ├── api/v1/              # API 路由
+│   ├── schemas/             # 数据模式
+│   ├── models/              # 模型适配器
+│   ├── services/            # 业务服务
+│   └── core/                # 核心工具
 ├── services/                 # 微服务工作节点
+│   ├── shared/              # 共享代码
 │   ├── gateway/             # API 网关
-│   ├── worker_mace_orb/     # MACE+ORB 工作节点
-│   ├── worker_fairchem/     # FAIRChem 工作节点
-│   ├── worker_matgl/        # MatGL 工作节点
-│   ├── worker_grace/        # GRACE 工作节点
-│   └── worker_mattersim/    # MatterSim 工作节点
+│   ├── mace_orb/            # MACE+ORB Worker
+│   ├── fairchem_sevennet/   # FAIRChem+SevenNet Worker
+│   ├── matgl/               # MatGL Worker
+│   ├── grace/               # GRACE Worker
+│   └── mattersim/           # MatterSim Worker
 ├── docker/                   # Docker 配置
-│   ├── docker-compose.microservices.yml  # 生产环境
-│   ├── docker-compose.test.yml           # 测试环境
-│   └── docker-compose.cpu.yml            # CPU 模式
+│   ├── Dockerfile.*         # 各服务镜像
+│   ├── docker-compose.microservices.yml  # GPU 生产
+│   ├── docker-compose.test.yml           # GPU 测试
+│   ├── docker-compose.cpu.yml            # CPU 测试
+│   └── docker-compose.cpu-prod.yml       # CPU 生产
 ├── scripts/
 │   ├── install_models.py    # ML 力场安装脚本
 │   └── deploy.sh            # 部署脚本
 ├── examples/
-│   ├── setup_check.py       # 依赖检查器
+│   ├── 01-07_*.py           # 功能示例
+│   ├── 08_microservices_client.py  # 异步客户端
 │   ├── config.py            # 服务器配置
-│   ├── 01_basic_usage.py    # 基础 API 使用
-│   ├── 02_structure_optimization.py  # 结构优化
-│   ├── 03_md_stability.py   # MD 模拟
-│   ├── 04_bulk_modulus.py   # 体积模量
-│   ├── 05_heat_capacity.py  # 声子/热容
-│   ├── 06_acetylene_adsorption.py    # 乙炔吸附
-│   ├── 07_full_benchmark.py # 完整基准测试
 │   └── structures/          # 示例 MOF 结构
 ├── docs/
 │   └── DEPLOYMENT.md        # 部署文档
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml
+├── .env.example             # 环境变量模板
+├── requirements.txt         # Python 依赖
 └── README.md
 ```
 

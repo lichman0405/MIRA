@@ -32,7 +32,7 @@ MIRA 采用微服务架构，解决 ML 力场模型之间的依赖冲突问题�
 
 ## 快速开始
 
-### 1. 测试环境部署 (单 GPU)
+### 1. GPU 测试环境部署 (单 GPU)
 
 ```bash
 cd /path/to/MIRA
@@ -50,7 +50,7 @@ cd /path/to/MIRA
 # http://localhost:8000/docs
 ```
 
-### 2. 生产环境部署 (多 GPU)
+### 2. GPU 生产环境部署 (多 GPU)
 
 ```bash
 # 构建所有镜像
@@ -66,16 +66,46 @@ cd /path/to/MIRA
 ./scripts/deploy.sh down
 ```
 
-### 3. 手动 Docker Compose
+### 3. CPU 模式部署 (无 GPU 环境)
+
+适用于没有 NVIDIA GPU 的测试服务器或开发环境。
+
+```bash
+# 构建 CPU 镜像
+./scripts/deploy.sh build-cpu
+
+# 启动 CPU 测试环境 (Gateway + MACE-ORB)
+./scripts/deploy.sh test-cpu
+
+# 启动 CPU 生产环境 (Gateway + MACE-ORB + MatGL)
+./scripts/deploy.sh up-cpu
+
+# 检查状态
+./scripts/deploy.sh status
+```
+
+**CPU 模式注意事项：**
+- ⚠️ 计算速度比 GPU 慢 10-100 倍
+- ⚠️ 适合功能验证和小批量计算
+- ⚠️ 目前支持 MACE、ORB、MatGL 模型
+- ✅ 无需 NVIDIA 驱动和 CUDA
+
+### 4. 手动 Docker Compose
 
 ```bash
 cd docker
 
-# 测试环境
+# GPU 测试环境
 docker compose -f docker-compose.test.yml up -d
 
-# 生产环境 (需要 5+ GPU)
+# GPU 生产环境 (需要 5+ GPU)
 docker compose -f docker-compose.microservices.yml up -d
+
+# CPU 测试环境
+docker compose -f docker-compose.cpu.yml up -d
+
+# CPU 生产环境
+docker compose -f docker-compose.cpu-prod.yml up -d
 ```
 
 ## GPU 分配
@@ -219,14 +249,19 @@ docker system prune -f
 ```
 MIRA/
 ├── docker/
+│   ├── Dockerfile.base              # 基础镜像
 │   ├── Dockerfile.gateway           # Gateway 镜像
-│   ├── Dockerfile.mace-orb          # MACE+ORB 镜像
+│   ├── Dockerfile.mace-orb          # MACE+ORB GPU 镜像
+│   ├── Dockerfile.mace-orb-cpu      # MACE+ORB CPU 镜像
 │   ├── Dockerfile.fairchem-sevennet # FAIRChem+SevenNet 镜像
-│   ├── Dockerfile.matgl             # MatGL 镜像
+│   ├── Dockerfile.matgl             # MatGL GPU 镜像
+│   ├── Dockerfile.matgl-cpu         # MatGL CPU 镜像
 │   ├── Dockerfile.grace             # GRACE 镜像
 │   ├── Dockerfile.mattersim         # MatterSim 镜像
-│   ├── docker-compose.microservices.yml  # 生产环境
-│   └── docker-compose.test.yml      # 测试环境
+│   ├── docker-compose.microservices.yml  # GPU 生产环境
+│   ├── docker-compose.test.yml      # GPU 测试环境
+│   ├── docker-compose.cpu.yml       # CPU 测试环境
+│   └── docker-compose.cpu-prod.yml  # CPU 生产环境
 ├── services/
 │   ├── shared/                      # 共享代码
 │   │   ├── schemas.py               # 统一数据模型
@@ -247,9 +282,26 @@ MIRA/
     └── deploy.sh                    # 部署脚本
 ```
 
+## 部署脚本命令参考
+
+| 命令 | 说明 |
+|------|------|
+| `./scripts/deploy.sh build` | 构建所有 GPU 镜像 |
+| `./scripts/deploy.sh build-cpu` | 构建 CPU 镜像 |
+| `./scripts/deploy.sh test` | 启动 GPU 测试环境 |
+| `./scripts/deploy.sh test-cpu` | 启动 CPU 测试环境 |
+| `./scripts/deploy.sh up` | 启动 GPU 生产环境 |
+| `./scripts/deploy.sh up-cpu` | 启动 CPU 生产环境 |
+| `./scripts/deploy.sh down` | 停止所有服务 |
+| `./scripts/deploy.sh logs` | 查看日志 |
+| `./scripts/deploy.sh logs <服务名>` | 查看特定服务日志 |
+| `./scripts/deploy.sh status` | 查看服务状态 |
+| `./scripts/deploy.sh clean` | 清理 Docker 资源 |
+
 ## 注意事项
 
 1. **首次构建耗时较长**: 每个模型容器需要安装各自的依赖，首次构建可能需要 30-60 分钟
 2. **模型下载**: 首次运行时，模型会自动下载到 `mira-models` 卷
 3. **GPU 内存**: 每个模型服务约需 4-8GB GPU 内存
 4. **网络**: 所有服务通过 Docker 内部网络通信，Gateway 对外暴露 8000 端口
+5. **CPU 模式**: 计算速度较慢，适合功能测试和小批量计算
