@@ -344,10 +344,8 @@ MIRA/
 │   ├── API.md               # API 接口文档
 │   ├── DEPLOYMENT.md        # 部署指南
 │   ├── CPU_COMPATIBILITY.md # CPU 模式兼容性
-│   ├── GPU_DEPLOYMENT_CHECK.md  # GPU 配置检查
 │   ├── TROUBLESHOOTING_PYTORCH.md  # PyTorch 故障排查
-│   ├── QUICKFIX_ASE.md      # ASE 快速修复
-│   └── ASE_COMPATIBILITY_FIX.md    # ASE 兼容性详解
+│   └── QUICKFIX_ASE.md      # ASE 快速修复
 ├── .dockerignore            # Docker 构建忽略文件
 ├── .env.example             # 环境变量模板
 ├── LICENSE                  # MIT 许可证
